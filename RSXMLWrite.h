@@ -1,23 +1,25 @@
 #include "GenArr.cpp"
-#include "GenArrVocal.cpp"
+#include "BaseVocals.h"
 
 class RSXMLWrite
 	{
 	// Private:
 	std::string fileName; std::string arrName;
 	Arrangement arr; 
-	Vocal vocals;
+	ArrVocal arrV;
 	
 	public:
 		RSXMLWrite();
-		RSXMLWrite(std::string file);
+		RSXMLWrite(std::string file, Arrangement a);
+		RSXMLWrite(std::string file, ArrVocal v);
 		~RSXMLWrite() { };
 		
-		void process(); // Main process function for RSXMLWrite.
-		
-		void setArrangement(Arrangement a) { arr = a; };
-		void setVocals(Vocal v) { vocals = v; };
+		void processArrangement(); // Main process function for RSXMLWrite.
+		void processVocals(); // Writing a vocal file.
 	};
 	
 RSXMLWrite::RSXMLWrite() { fileName = ""; arrName = ""; }
-RSXMLWrite::RSXMLWrite(std::string file) { fileName = file; } 
+RSXMLWrite::RSXMLWrite(std::string file, Arrangement a) 
+	{ fileName = file; arr = a; }
+RSXMLWrite::RSXMLWrite(std::string file, ArrVocal v) 
+	{ fileName = file; arrV = v; } 

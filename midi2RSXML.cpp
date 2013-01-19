@@ -10,9 +10,9 @@ int main(int argc, char* argv[])
 		the midi file and external lyrics as appropriate.
 		- Flags:
 			- "-extlyrics": This flag tells the program to ignore MIDI
-			lyric events and look for a .txt file for lyrics. These 
-			lyrics should be separated into syllables; whitespace is used
-			to delimit syllables.
+			lyric events and look for a .txt file (with the same name) for 
+			lyrics. These lyrics should be separated into syllables; 
+			whitespace is used to delimit syllables.
 			- "-palmtoggle": This flag alters the behaviour of the 
 			palm-mute text event (TPM). By default, the program will assign 
 			the palm-mute flag solely to a note which corresponds to the 
@@ -67,15 +67,20 @@ int main(int argc, char* argv[])
 		it != midi.getTracks().end(); ++it)
 		{
 		Track& cT(*it);
-		if(cT.getName() == "Vocals")
+		if(cT.getName() == "Vocals" || cT.getType() == vocal)
 			{
-			
+			ArrVocal v;
+			if(externalLyrics)
+				{ ArrVocal v(cT, midiName); }
+			else { ArrVocal v(cT); }
+			RSXMLWrite rsxml(title, v);
+			rsxml.processVocals();
 			}
 		else
 			{
 			CreateArrangement create(cT);
-			RSXMLWrite rsxml(title);
-			rsxml.setArrangement(create.getArrangement());
+			RSXMLWrite rsxml(title, create.getArrangement());
+			rsxml.processArrangement();
 			}
 		}
 	

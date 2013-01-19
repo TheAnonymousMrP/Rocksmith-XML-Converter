@@ -11,6 +11,7 @@ class CreateArrangement
 	// Private
 	Track track;
 	Arrangement a;
+	eTrackType trackType;
 	
 	float timer;
 	std::vector<Beat> vBeats;
