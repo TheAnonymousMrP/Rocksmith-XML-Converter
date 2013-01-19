@@ -10,23 +10,25 @@ struct Lyric
 	float time;
 	int pitch;
 	std::string lyric;
-	}
+	};
 
 class Vocal
 	{
 	bool ext;
 	std::vector<Lyric> lyrics;
 	
+	void process();
+	
 	public:
 		Vocal() { };
 		Vocal(Track t, bool e);
-		Vocal(const Vocal v) { };
+		Vocal(const Vocal& v) { };
 		~Vocal() { };
 		
 		Lyric getLyric(int i) { return lyrics.at(i); };
 		std::vector<Lyric> getLyrics() { return lyrics; };
 	
-	}
+	};
 	
 Vocal::Vocal(Track t, bool e)
 	{ 
@@ -50,7 +52,7 @@ Vocal::Vocal(Track t, bool e)
 		}
 	}
 	
-Vocal::process()
+void Vocal::process()
 	{
 	
 	

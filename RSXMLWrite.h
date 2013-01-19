@@ -1,4 +1,5 @@
-#include "arrProcess.cpp"
+#include "GenArr.cpp"
+#include "GenArrVocal.cpp"
 
 class RSXMLWrite
 	{
@@ -13,7 +14,6 @@ class RSXMLWrite
 		~RSXMLWrite() { };
 		
 		int process(); // Main process function for RSXMLWrite.
-		int processTrack(); // Slimline version for development purposes.
 		
 		void setArrangement(Arrangement a, bool v) { arr = a; };
 		void setVocals(Vocal v) { vocals = v; };
