@@ -173,20 +173,20 @@ int MIDIRead::processTrack(int beginPoint) // Returns end-position
 					{					
 					case 0x01: // Text Event. Useful for RS-specific stuff.
 						{
-						int metaType = 0;
+						eMeta metaType;
 						m.text = convertBytes2String(i+4,(int)memblock[i+3]-1);
 						switch(memblock[i+4])
 							{
 							case 'A': // Anchor
-								metaType = eAnchor; break;
+								metaType = anchor; break;
 							case 'C': // Chord name
-								metaType = eChord; break;
+								metaType = chord; break;
 							case 'P': // Phrase name
-								metaType = ePhrase; break;
+								metaType = phrase; break;
 							case 'T': // Technique
-								metaType = eTech; break;
+								metaType = tech; break;
 							case 'X': // Special cases
-								metaType = eSpecial; break;
+								metaType = special; break;
 							}
 						currentTrack.addMeta(metaType, m);
 						}
@@ -208,10 +208,10 @@ int MIDIRead::processTrack(int beginPoint) // Returns end-position
 						break;
 					case 0x05: // Lyrics.
 						m.text = convertBytes2String(i+3,(int)memblock[i+3]); 
-						currentTrack.addMeta(eLyrics, m); break;
+						currentTrack.addMeta(lyrics, m); break;
 					case 0x06: // Marker meta-event.
 						m.text = convertBytes2String(i+3,(int)memblock[i+3]);
-						currentTrack.addMeta(eMarker, m); break;
+						currentTrack.addMeta(marker, m); break;
 					case 0x51: // Set Tempo. Very necessary.
 					// Tempo changes shouldn't break everything, hopefully.
 						{

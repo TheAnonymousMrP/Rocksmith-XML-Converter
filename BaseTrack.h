@@ -5,11 +5,20 @@
 #include "Base.h"
 #endif
 
+enum eTrackType
+	{
+	vocal,
+	guitar,
+	bass,
+	};
+
 class Track
 	{
 	// Private
 	std::string trackName;
 	float duration;
+	eTrackType trackType;
+	
 	std::vector<Note> notes;
 	std::vector<Note> noteOn;
 	std::vector<Note> noteOff;
@@ -35,20 +44,21 @@ class Track
 		int addNoteI(Note nOn, Note nOff);
 		void addNoteOn(Note n);
 		void addNoteOff(Note n);
-		void addMeta(int i, Meta m);
+		void addMeta(eMeta i, Meta m);
 		void addTempo(float time, float tempo);
 		void addTimeSig(TimeSig t);
 		
 		std::string getName();
 		float getDuration();
+		int getType();
+		
 		Note getNote(int i);
 		int getNoteSize();
 		std::vector<Note> getNotes();
-		// std::vector<Note> getNotesWithinTime(float a, float b);
 		
-		Meta getMeta(int type, int i);
-		int getMetaSize(int type);
-		std::vector<Meta> getMetas(int type);	
+		Meta getMeta(eMeta m, int i);
+		int getMetaSize(eMeta m);
+		std::vector<Meta> getMetas(eMeta m);	
 		
 		Tempo getTempo(int i); 
 		std::vector<Tempo> getTempos();
@@ -57,6 +67,7 @@ class Track
 		
 		void setName(std::string s);
 		void setDuration(float f);
+		void setType(eTrackType tt);
 		
 		void sortNotes(); // Reduce the On and Off vectors to a single vector.
 	};
@@ -91,18 +102,18 @@ int Track::addNoteI(Note nOn, Note nOff)
 	{ addNote(nOn, nOff); return getNoteSize(); }
 void Track::addNoteOn(Note n) { noteOn.push_back(n); }
 void Track::addNoteOff(Note n) { noteOff.push_back(n); }
-void Track::addMeta(int i, Meta m)
+void Track::addMeta(eMeta i, Meta m)
 	{ 
 	switch(i)
 		{
-		case eAnchor: mAnchor.push_back(m); break;
-		case eBend: mBend.push_back(m); break;
-		case eChord: mChord.push_back(m); break;
-		case eLyrics: mLyrics.push_back(m); break;
-		case eMarker: mMarker.push_back(m); break;
-		case ePhrase: mPhrase.push_back(m); break;
-		case eTech: mTech.push_back(m); break;
-		case eSpecial: mSpecial.push_back(m); break;
+		case anchor: mAnchor.push_back(m); break;
+		case bend: mBend.push_back(m); break;
+		case chord: mChord.push_back(m); break;
+		case lyrics: mLyrics.push_back(m); break;
+		case marker: mMarker.push_back(m); break;
+		case phrase: mPhrase.push_back(m); break;
+		case tech: mTech.push_back(m); break;
+		case special: mSpecial.push_back(m); break;
 		}
 	}
 void Track::addTempo(float time, float tempo) 
@@ -117,6 +128,8 @@ void Track::addTimeSig(TimeSig t) { mTimeSig.push_back(t); }
 // Get methods
 std::string Track::getName() { return trackName; }
 float Track::getDuration() { return duration; }
+int Track::getType() { return trackType; }
+
 Note Track::getNote(int i)
 	{
 	if(i < notes.size()) { return notes.at(i); }
@@ -124,60 +137,47 @@ Note Track::getNote(int i)
 	}
 int Track::getNoteSize() { return notes.size(); }
 std::vector<Note> Track::getNotes() { return notes; }
-/* std::vector<Note> Track::getNotesWithinTime(float a, float b)
-	{
-	std::vector<Note> n;
-	float f;
-	for(std::vector<Note>::iterator it = notes.begin();
-		it != notes.end(); ++it)
-		{
-		Note cN = *it;
-		f = cN.getTime();
-		if(f > b) { return n; }
-		if(f >= a) { n.push_back(cN); }
-		}
-	} */
 	
-Meta Track::getMeta(int type, int i)
+Meta Track::getMeta(eMeta m, int i)
 	{ 
-	switch(type)
+	switch(m)
 		{
-		case eAnchor: return mAnchor.at(i); break;
-		case eBend: return mBend.at(i); break;
-		case eChord: return mChord.at(i); break;
-		case eLyrics: return mLyrics.at(i); break;
-		case eMarker: return mMarker.at(i); break;
-		case ePhrase: return mPhrase.at(i); break;
-		case eTech: return mTech.at(i); break;
-		case eSpecial: return mSpecial.at(i); break;
+		case anchor: return mAnchor.at(i); break;
+		case bend: return mBend.at(i); break;
+		case chord: return mChord.at(i); break;
+		case lyrics: return mLyrics.at(i); break;
+		case marker: return mMarker.at(i); break;
+		case phrase: return mPhrase.at(i); break;
+		case tech: return mTech.at(i); break;
+		case special: return mSpecial.at(i); break;
 		}
 	}
-int Track::getMetaSize(int type)
+int Track::getMetaSize(eMeta m)
 	{ 
-	switch(type)
+	switch(m)
 		{
-		case eAnchor: return mAnchor.size(); break;
-		case eBend: return mBend.size(); break;
-		case eChord: return mChord.size(); break;
-		case eLyrics: return mLyrics.size(); break;
-		case eMarker: return mMarker.size(); break;
-		case ePhrase: return mPhrase.size(); break;
-		case eTech: return mTech.size(); break;
-		case eSpecial: return mSpecial.size(); break;
+		case anchor: return mAnchor.size(); break;
+		case bend: return mBend.size(); break;
+		case chord: return mChord.size(); break;
+		case lyrics: return mLyrics.size(); break;
+		case marker: return mMarker.size(); break;
+		case phrase: return mPhrase.size(); break;
+		case tech: return mTech.size(); break;
+		case special: return mSpecial.size(); break;
 		}
 	}
-std::vector<Meta> Track::getMetas(int type)
+std::vector<Meta> Track::getMetas(eMeta m)
 	{ 
-	switch(type)
+	switch(m)
 		{
-		case eAnchor: return mAnchor; break;
-		case eBend: return mBend; break;
-		case eChord: return mChord; break;
-		case eLyrics: return mLyrics; break;
-		case eMarker: return mMarker; break;
-		case ePhrase: return mPhrase; break;
-		case eTech: return mTech; break;
-		case eSpecial: return mSpecial; break;
+		case anchor: return mAnchor; break;
+		case bend: return mBend; break;
+		case chord: return mChord; break;
+		case lyrics: return mLyrics; break;
+		case marker: return mMarker; break;
+		case phrase: return mPhrase; break;
+		case tech: return mTech; break;
+		case special: return mSpecial; break;
 		}
 	}
 	
@@ -202,6 +202,7 @@ std::vector<TimeSig> Track::getTimeSigs() { return mTimeSig; }
 // Set methods
 void Track::setName(std::string s) { trackName = s; }
 void Track::setDuration(float f) { duration = f; }
+void Track::setType(eTrackType tt) { trackType = tt; }
 
 // Miscellaneous methods
 void Track::sortNotes() // Convert the On and Off vectors into a single vector.

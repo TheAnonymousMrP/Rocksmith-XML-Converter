@@ -44,8 +44,8 @@ void CreateArrangement::process()
 void CreateArrangement::techniques()
 	{
 	metaX.clear();
-	vector<Meta> metaX(track.getMetas(eTech));
-	float nTime = 0, xTime = 0; int meta = 0;
+	vector<Meta> metaX(track.getMetas(tech));
+	float nTime = 0, xTime = 0; eTechnique t = none;
 	/* As there will always be less techniques than notes, we will iterate
 	over the former to reduce redundant searches. We know all meta-events 
 	and notes were created in a chronological order (at least with MIDI we do),
@@ -66,33 +66,34 @@ void CreateArrangement::techniques()
 			if(nTime == xTime)
 				{
 				if(cM.text == "B1")
-					{ meta = eBend1; }
+					{ t = bendHalf; }
 				else if(cM.text == "B2")
-					{ meta = eBend2; }
-				if(cM.text == "H")
-					{ meta = eHar; }
-				if(cM.text == "HH")
-					{ meta = eHam; }
+					{ t = bendFull; }
+				else if(cM.text == "H")
+					{ t = harmonic; }
+				else if(cM.text == "HH")
+					{ t = hammerOn; }
 				else if(cM.text == "HP")
-					{ meta = ePull; }
-				if(cM.text == "PM")
-					{ meta = ePalm; }
-				if(cM.text == "T")
-					{ meta = eTrem; }
-
+					{ t = pullOff; }
+				else if(cM.text == "PM")
+					{ t = palmMute; }
+				else if(cM.text == "T")
+					{ t = tremolo; }
 				// Slides are slightly trickier.	
-				if(cM.text == "S")
+				else if(cM.text == "S")
 					{ 
+					t = slide;
 					std::vector<Note>::iterator nextNote = jt;
 					++nextNote;
 					Note nN = *nextNote;
 					cN.setSlide(nN.getFret());
 					// We also want to skip this next note.
 					++jt;
-					break; 
 					}
 				
-				cN.setTechnique(meta); break;
+				cN.setTechnique(t); 
+				
+				t = none; break;
 				}
 			}
 		// Just in case...
@@ -163,7 +164,7 @@ void CreateArrangement::createDifficulties()
 void CreateArrangement::createSections()
 	{
 	metaX.clear();
-	vector<Meta> metaX(track.getMetas(eMarker));
+	vector<Meta> metaX(track.getMetas(marker));
 	
 	vector<Meta>::iterator it, jt;
 	it = metaX.begin(); jt = it; ++jt;
@@ -185,7 +186,7 @@ void CreateArrangement::createSections()
 void CreateArrangement::createPhrases()
 	{
 	metaX.clear();
-	std::vector<Meta> metaX(track.getMetas(ePhrase));
+	std::vector<Meta> metaX(track.getMetas(phrase));
 
 	std::vector<Meta>::iterator it, jt;
 	it = metaX.begin(); jt = it; ++jt;
@@ -226,7 +227,7 @@ void CreateArrangement::difficulty(int i)
 void CreateArrangement::chords()
 	{
 	metaX.clear();
-	vector<Meta> metaX(track.getMetas(eChord));
+	vector<Meta> metaX(track.getMetas(chord));
 	}
 	
 /* void CreateArrangement::difficulties()

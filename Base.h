@@ -19,24 +19,30 @@
 
 int stringPitch[NUMSTRINGS]; // Holds the open-string pitch values.
 
-enum
+enum eMeta
 	{
-	eAnchor = 0,
-	eBend,
-	eChord,
-	eLyrics,
-	eMarker,
-	ePhrase,
-	eTech,
-	eSpecial,
+	anchor = 0,
+	bend,
+	chord,
+	lyrics,
+	marker,
+	phrase,
+	tech,
+	special,
+	};
 	
-	eBend1,
-	eBend2,
-	eHar,
-	eHam,
-	ePull,
-	ePalm,
-	eTrem,
+enum eTechnique
+	{
+	none,
+	// Bends may need to be expanded in the future with new bend additions.
+	bendHalf,
+	bendFull,
+	harmonic,
+	hammerOn,
+	pullOff,
+	palmMute,
+	slide,
+	tremolo,
 	};
 	
 struct Meta
@@ -71,7 +77,7 @@ class Note
 	int minDif;
 	// int maxDif;
 	
-	int technique;
+	eTechnique technique;
 	int slide;
 	
 	public:
@@ -91,9 +97,9 @@ class Note
 		void setDuration(float d) { duration = d; };
 		// This should only be called after we have the right tuning.
 		void setFret() { fret = pitch - stringPitch[string]; };	
-		void setTechnique(int i)	
+		void setTechnique(eTechnique t)	
 			{
-			technique = i;
+			technique = t;
 			/* switch(i)
 				{
 				case eBend1: techni = 1; break;
@@ -117,7 +123,7 @@ Note::Note()
 	fret = -1;
 	minDif = -1;
 	
-	technique = -1;
+	technique = none;
 	}
 	
 Note::Note(float t, int s, int p, int d)
@@ -129,19 +135,8 @@ Note::Note(float t, int s, int p, int d)
 	fret = -1;
 	minDif = d;
 	
-	technique = -1;
+	technique = none;
 	}
-
-/* Note::Note(float t, float dur, int s, int p, int dif)
-	{
-	time = t;
-	duration = dur;
-	string = s;
-	pitch = p;
-	minDif = dif;
-	
-	fret = -1;
-	} */
 	
 Note::Note(const Note& n)
 	{

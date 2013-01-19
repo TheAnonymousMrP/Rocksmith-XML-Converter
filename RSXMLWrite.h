@@ -13,11 +13,11 @@ class RSXMLWrite
 		RSXMLWrite(std::string file);
 		~RSXMLWrite() { };
 		
-		int process(); // Main process function for RSXMLWrite.
+		void process(); // Main process function for RSXMLWrite.
 		
-		void setArrangement(Arrangement a, bool v) { arr = a; };
+		void setArrangement(Arrangement a) { arr = a; };
 		void setVocals(Vocal v) { vocals = v; };
 	};
 	
 RSXMLWrite::RSXMLWrite() { fileName = ""; arrName = ""; }
-RSXMLWrite::RSXMLWrite(std::string file) { fileName = file; }
+RSXMLWrite::RSXMLWrite(std::string file) { fileName = file; } 

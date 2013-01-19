@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 			{
 			CreateArrangement create(cT);
 			RSXMLWrite rsxml(title);
-			rsxml.setArrangement(create.getArrangement(), 0);
+			rsxml.setArrangement(create.getArrangement());
 			}
 		}
 	
