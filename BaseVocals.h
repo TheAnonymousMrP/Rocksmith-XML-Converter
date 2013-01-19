@@ -2,7 +2,7 @@
 #define _BASE_VOCALS_
 
 #ifndef _BASE-TRACK_
-#include "BaseTrack-2.0.1.h"
+#include "BaseTrack.h"
 #endif
 
 struct Lyric
