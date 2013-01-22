@@ -43,44 +43,33 @@ void MIDIRead::process(int arrN)
 		}
 	}
 	
-void MIDIRead::testFile(string s)
+void MIDIRead::debug(string s)
 	{
-	string fileName = "testFile.txt";
-	ofstream file;
+	std::string fileName = "testFile.txt";
+	std::ofstream file;
 	file.open(fileName.c_str()); // This is the file we're writing to.
 	
 	file << "Test File for " << s << ".\n" ENDLINE
 	
 	cout << "Tracks: " << tracks.size() ENDLINE
 	
-	for(vector<Track>::iterator it = tracks.begin(); it != tracks.end(); ++it) 
-	// for(int it = 0; it < tracks.size(); ++it)
+	for(std::vector<Track>::iterator it = tracks.begin(); 
+		it != tracks.end(); ++it) 
 		{
 		file << "Track " << (it - tracks.begin()) << ":" ENDLINE
-		Track& cT = *it;
-		// file << "Track" << it << ":" ENDLINE
-		// Track& cT = tracks.at(it);
+		Track cT = *it;
+		std::vector<Note> notes = cT.getNotes();
 		// Should print all notes in a track.
-		cout << "Number of Notes: " << cT.getNoteSize() ENDLINE
-		int i = 0;
-		while(i >= 0)
+		cout << "Number of Notes: " << notes.size() ENDLINE
+		for(std::vector<Note>::iterator jt = notes.begin();
+			jt != notes.end(); ++jt)
 			{
-			Note cN = cT.getNote(i);
-			if(cN.getPitch() >= 0)
-				{
-				file << "Note " << i << " - Time: " 
-				<< cN.getTime() << " | String: " << cN.getString() 
-				<< " | Pitch: " << cN.getPitch() ENDLINE
-				++i;
-				}
-			else { i = -1; }
+			Note cN(*jt);
+			file << "Note " << jt - notes.begin() << " - Time: " 
+			<< cN.getTime() << " | String: " << cN.getString() 
+			<< " | Pitch: " << cN.getPitch() ENDLINE
 			}
 		file << "\nMetadata:" ENDLINE
-		i = 0;
-		while(i >= 0)
-			{
-			
-			}
 		file << "END OF TRACK. \n" ENDLINE
 		}
 	

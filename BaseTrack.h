@@ -8,8 +8,11 @@
 enum eTrackType
 	{
 	vocal,
-	guitar,
+	single,
+	combo,
+	chords,
 	bass,
+	bassPick,
 	};
 
 class Track
@@ -52,7 +55,7 @@ class Track
 		float getDuration();
 		int getType();
 		
-		Note getNote(int i);
+		// Note getNote(int i);
 		int getNoteSize();
 		std::vector<Note> getNotes();
 		
@@ -130,11 +133,11 @@ std::string Track::getName() { return trackName; }
 float Track::getDuration() { return duration; }
 int Track::getType() { return trackType; }
 
-Note Track::getNote(int i)
+/*Note Track::getNote(int i)
 	{
 	if(i < notes.size()) { return notes.at(i); }
 	else { Note n; return n; }
-	}
+	} */
 int Track::getNoteSize() { return notes.size(); }
 std::vector<Note> Track::getNotes() { return notes; }
 	

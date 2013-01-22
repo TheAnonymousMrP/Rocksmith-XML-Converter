@@ -5,6 +5,8 @@
 #include "BaseTrack.h"
 #endif
 
+#define DEFAULTSTRINGS 6
+
 // Functions
 template <class T>
 int findMaxDif(const std::vector<T>& source)
@@ -31,7 +33,7 @@ void addXs(const std::vector<T>& source, std::vector<T>& dest)
 struct Beat
 	{
 	// int bar, beat;
-	bool bar; // First beat in the bar.
+	int bar; // The current bar. If not the first beat, '-1'.
 	float time;
 	float tempo;
 	// TimeSig timeSig;
@@ -48,6 +50,7 @@ class ChordTemplate
 	{
 	int id; static int count; 
 	std::string name; 
+	std::string display; // Display name.
 	
 	int firstString;
 	int finger[NUMSTRINGS]; 
@@ -66,6 +69,7 @@ class ChordTemplate
 		
 		int getID() { return id; };
 		std::string getName() { return name; };
+		std::string getDisplayName() { return display; };
 		int getFirstString() { return firstString; };
 		int getMinDif() { return minDif; };
 		int getMaxDif() { return maxDif; };
@@ -73,6 +77,7 @@ class ChordTemplate
 		
 		void setID() { id = count; count++; };
 		void setName(std::string s) { name = s; };
+		void setDisplayName(std::string s) { display = s; };
 		void setMinDif() 
 			{
 			int min, a;
@@ -105,6 +110,20 @@ ChordTemplate::ChordTemplate(const ChordTemplate& c)
 	std::vector<Note> notes(c.notes);
 	}	
 	
+struct Anchor
+	{
+	float time;
+	int fret;
+	float width;
+	};
+
+struct HandShape
+	{
+	float time;
+	float duration;
+	int id;	
+	};	
+	
 class Difficulty
 	{
 	// Private
@@ -112,6 +131,8 @@ class Difficulty
 	
 	std::vector<Note> notes;
 	std::vector<Chord> chords;
+	std::vector<Anchor> anchors;
+	std::vector<HandShape> hands;
 	
 	public:
 		Difficulty() { };
@@ -228,7 +249,7 @@ class Section
 	int startBeat, endBeat;
 	int iteration;
 	
-	std::vector<Phrase> contents;
+	std::vector<Phrase> phrases;
 	
 	public:
 		Section();
@@ -236,14 +257,14 @@ class Section
 		Section(Meta m);
 		~Section() { };
 		
-		void addPhrase(Phrase p) { contents.push_back(p); };
-		void addPhrases(std::vector<Phrase> p) { addXs(p, contents); };
+		void addPhrase(Phrase p) { phrases.push_back(p); };
+		void addPhrases(std::vector<Phrase> p) { addXs(p, phrases); };
 		
 		std::string getName() { return name; }
 		float getTime() { return time; }
 		float getDuration() { return duration; }
 		int getID() { return iteration; }
-		Phrase getPhrase(int i) { return contents.at(i); };
+		std::vector<Phrase> getPhrases() { return phrases; };
 		
 		void setDuration(float x) { duration = x; };
 		void setID() { iteration = 0; };
@@ -254,7 +275,8 @@ Section::Section()
 	{
 	name = "";
 	time = 0;
-	duration = 0;
+	duration = 0;	
+	iteration = 1;
 	}
 	
 Section::Section(const Section& s)
@@ -264,7 +286,7 @@ Section::Section(const Section& s)
 	duration = s.duration;
 	iteration = s.iteration;
 	
-	std::vector<Phrase> contents(s.contents);
+	std::vector<Phrase> phrases(s.phrases);
 	}
 	
 Section::Section(Meta m)
@@ -273,37 +295,40 @@ Section::Section(Meta m)
 	time = m.time;
 	duration = 0;
 	
-	iteration = 0;
+	iteration = 1;
 	}
 	
 class Arrangement
 	{
 	// Private
 	std::string name;
-	int tuning;	
-	std::vector<Section> contents;
+	float duration;
+	int tuning[DEFAULTSTRINGS];	
+	std::vector<Section> sections;
 	std::vector<Beat> beats;
 	Track trackCopy; // redundant, but maybe helpful?
 	
 	public:
-		Arrangement() { name = ""; };
+		Arrangement() { name = ""; duration = 0.0; };
 		Arrangement(Track t); // For 'slimline' version
 		Arrangement(const Arrangement& a); // Copy constructor
 		~Arrangement() { };
 		
-		void addSection(Section s) { contents.push_back(s); }
-		void addSections(std::vector<Section> s) { addXs(s, contents); };
+		void addSection(Section s) { sections.push_back(s); }
+		void addSections(std::vector<Section> s) { addXs(s, sections); };
 		
 		std::string getName() { return name; };
-		int getTuning() { return tuning; };
+		float getDuration() { return duration; };
+		int getTuning(int i) { return tuning[i]; };
 		
-		Beat getBeat(int i) { return beats.at(i); };
+		std::vector<Section> getSections() { return sections; };
 		std::vector<Beat> getBeats() { return beats; };
 	};
 	
 Arrangement::Arrangement(Track t)
 	{
 	name = t.getName();
+	duration = t.getDuration();
 	std::vector<Tempo> tempo(t.getTempos());
 	Track trackCopy(t);
 	}
@@ -311,7 +336,8 @@ Arrangement::Arrangement(Track t)
 Arrangement::Arrangement(const Arrangement& a)
 	{
 	name = a.name;
-	std::vector<Section> contents(a.contents);
+	duration = a.duration;
+	std::vector<Section> sections(a.sections);
 	std::vector<Beat> beats(a.beats);
 	trackCopy = a.trackCopy;
 	}

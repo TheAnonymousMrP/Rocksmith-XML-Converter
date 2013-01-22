@@ -66,9 +66,9 @@ void CreateArrangement::techniques()
 			if(nTime == xTime)
 				{
 				if(cM.text == "B1")
-					{ t = bendHalf; }
+					{ t = bendHalf; cN.setBend(1.0); }
 				else if(cM.text == "B2")
-					{ t = bendFull; }
+					{ t = bendFull; cN.setBend(2.0); }
 				else if(cM.text == "H")
 					{ t = harmonic; }
 				else if(cM.text == "HH")
@@ -91,7 +91,7 @@ void CreateArrangement::techniques()
 					++jt;
 					}
 				
-				cN.setTechnique(t); 
+				cN.setTechnique(t,0); // Needs to implement difficulties.
 				
 				t = none; break;
 				}
@@ -108,7 +108,8 @@ void CreateArrangement::techniques()
 void CreateArrangement::createBeatGrid()
 	{
 	std::vector<Tempo> vT(track.getTempos());
-	int beat = 0; // Counter.
+	int beat = 0; // Beat counter.
+	int bar = 0; // Bar counter.
 
 	std::vector<Tempo>::iterator it = vT.begin();
 	std::vector<Tempo>::iterator jt = it; ++jt;
@@ -124,7 +125,8 @@ void CreateArrangement::createBeatGrid()
 			b.time = timer;
 			b.tempo = cT.tempo;
 			if(beat % DEFAULTTIMESIGNUM == 0)
-				{ b.bar = true; }
+				{ b.bar = bar; ++bar; }
+			else { b.bar = -1; }
 			vBeats.push_back(b);
 			
 			timer += increment;

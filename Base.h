@@ -35,14 +35,21 @@ enum eTechnique
 	{
 	none,
 	// Bends may need to be expanded in the future with new bend additions.
-	bendHalf,
-	bendFull,
+	bendHalf, bendFull,
 	harmonic,
 	hammerOn,
-	pullOff,
+	fretHandMute,
 	palmMute,
-	slide,
+	pickUp, pickDown,
+	pinchHarmonic,
+	pullOff,
+	slide, slideUnpitch,
+	// I'm guessing 'leftHand' and 'rightHand' are related to tapping.
+	tapLeft, tapRight, 
 	tremolo,
+	vibrato,
+	// Bass
+	slap, pluck,
 	};
 	
 struct Meta
@@ -77,12 +84,12 @@ class Note
 	int minDif;
 	// int maxDif;
 	
-	eTechnique technique;
+	eTechnique technique; int techDif; // Difficulty when technique is added.
 	int slide;
+	float bendTime, bendStep; // if the bend is expanded as expected.
 	
 	public:
-		Note();
-		Note(float t, int s, int p, int d);
+		Note(float t = -1.0, int s = -1, int p = -1, int d = -1);
 		// Note(float t, float dur, int s, int p, int dif);
 		Note(const Note& n); // Copy Constructor
 		~Note() { };
@@ -97,34 +104,11 @@ class Note
 		void setDuration(float d) { duration = d; };
 		// This should only be called after we have the right tuning.
 		void setFret() { fret = pitch - stringPitch[string]; };	
-		void setTechnique(eTechnique t)	
-			{
-			technique = t;
-			/* switch(i)
-				{
-				case eBend1: techni = 1; break;
-				case eBend2: bend = 2; break;
-				case eHar: har = 1; break;
-				case eHam: ham = 1; hopo = 1; break;
-				case ePull: pull = 1; hopo = 1; break;
-				case ePalm: palm = 1; break;
-				case eTrem: trem = 1; break;
-				} */
-			}
-		void setSlide(int fret) { slide = fret; }
+		void setTechnique(eTechnique t, int d) { technique = t; techDif = d; };
+		void setSlide(int fret) { slide = fret; };
+		// void setBend(float bT, float bS) { bendTime = bT; bendStep = bS; };
+		void setBend(float b) { bendTime = time; bendStep = b; };
 	};
-	
-Note::Note()
-	{
-	time = -1.0;
-	duration = 0;
-	string = -1;
-	pitch = -1;
-	fret = -1;
-	minDif = -1;
-	
-	technique = none;
-	}
 	
 Note::Note(float t, int s, int p, int d)
 	{
@@ -135,7 +119,10 @@ Note::Note(float t, int s, int p, int d)
 	fret = -1;
 	minDif = d;
 	
-	technique = none;
+	technique = none; techDif = -1;
+	slide = -1;
+	bendTime = -1.0;
+	bendStep = -1.0;
 	}
 	
 Note::Note(const Note& n)
@@ -147,7 +134,10 @@ Note::Note(const Note& n)
 	fret = n.fret;
 	minDif = n.minDif;
 	
-	technique = n.technique;
+	technique = n.technique; techDif = n.techDif;
+	slide = n.slide;
+	bendTime = n.bendTime;
+	bendStep = n.bendStep;
 	}
 	
 // Functions

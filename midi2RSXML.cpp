@@ -30,14 +30,16 @@ int main(int argc, char* argv[])
 			file. Not implemented yet. 
 			- "-logic" - This flag triggers a few assumptions based on 
 			how Logic prepares MIDI files. */
-	string midiName = argv[1]; /* If a filename isn't the first argument, 
+			
+	std::string midiName = argv[1]; /* If a filename isn't the first argument, 
 	the program's going to fail. Also, don't get the filename wrong. 
 	I know jack shit about exceptions and all that. */
-	string title = "Title"; /* Song name. Used more in the arrangement
-	.xml's, but useful here for a filename. */
-	midiMode = "";
-	string arrS = "1"; int arrN = -1;
-	string arr = "Arrangement";
+	std::string title = "Title"; // Song name.
+	
+	int arrN = -1;
+	std::string arrTitle = "Arrangement";
+	
+	std::string midiMode = "";
 	for(int i = 2; i < argc; i++)
 		{ 
 		// Song title.
@@ -47,7 +49,7 @@ int main(int argc, char* argv[])
 		if(!strcmp(argv[i],"-arr"))
 			{ 
 			if(argv[i+1] != NULL) 
-				{ arrS = argv[i+1]; arrN = atoi(arrS.c_str()); } 
+				{ std::string arrS = argv[i+1]; arrN = atoi(arrS.c_str()); } 
 			}
 		// External Lyrics flag.
 		if(!strcmp(argv[i],"-extlyrics")) { externalLyrics = 1; }
@@ -61,7 +63,7 @@ int main(int argc, char* argv[])
 	midi.setFileName(midiName);
 	
 	midi.process(arrN);
-	midi.testFile(midiName);
+	midi.debug(midiName);
 	
 	for(std::vector<Track>::iterator it = midi.getTracks().begin();
 		it != midi.getTracks().end(); ++it)
@@ -73,13 +75,13 @@ int main(int argc, char* argv[])
 			if(externalLyrics)
 				{ ArrVocal v(cT, midiName); }
 			else { ArrVocal v(cT); }
-			RSXMLWrite rsxml(title, v);
+			RSXMLWrite rsxml(midiName, v);
 			rsxml.processVocals();
 			}
 		else
 			{
 			CreateArrangement create(cT);
-			RSXMLWrite rsxml(title, create.getArrangement());
+			RSXMLWrite rsxml(midiName, title, create.getArrangement());
 			rsxml.processArrangement();
 			}
 		}

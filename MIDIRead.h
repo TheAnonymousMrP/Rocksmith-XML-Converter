@@ -42,9 +42,10 @@ class MIDIRead
 		
 		void process(int arrN); // 'Main' method for MIDIRead
 		// 'arrN' is the number of arrangements we want to pull from the file.
-		void testFile(std::string s); /* Will generate a file listing the 
+		void debug(std::string s); /* Will generate a file listing the 
 		contents of the pulled tracks. For debug purposes. */
-	
+		
+		float getEndTime() { return endTime; }	
 		Track getTrack(int i); // Copies a track for public modification.
 		int getNumTracks() { return tracks.size(); }; 
 		std::vector<Track> getTracks() { return tracks; };
