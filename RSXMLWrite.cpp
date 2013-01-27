@@ -2,7 +2,7 @@
 
 void RSXMLWrite::processArrangement()
 	{
-	std::string file = fileName + "-" + arrName + ".xml";
+	std::string file = fileName + "-" + arr.getName() + ".xml";
 	ofstream arrangement;
 	arrangement.open(file.c_str()); // This is the file we're writing to.
 	cout << file ENDLINE
@@ -127,9 +127,68 @@ void RSXMLWrite::processVocals()
 	vocals.close();
 	}
 	
-// Write methods - Pass one of the object. ===
+// Write methods 
 
-void RSXMLWrite::writeNote(ofstream arrangement, Note n, int indent)
+void RSXMLWrite::writeDifficulty(ofstream& arrangement, int dif)
+	{
+	
+	}
+
+// Sub-level write methods - Pass one of the object. ===
+
+void RSXMLWrite::writeAnchor(ofstream& arrangement, Anchor a, int indent)
+	{
+	/* <anchor time="11.579" fret="8" width="4.000"/> */
+	std::string t = "";
+	switch(indent)
+		{
+		case 4: "\t\t";
+		case 2: "\t\t"; break;
+		}
+	arrangement << t << "<anchor time=\"" << a.time << "\" fret=\""
+	<< a.fret << "\" width=\"" << a.width << "\" />\n";
+	}
+	
+void RSXMLWrite::writeHand(ofstream& arrangement, HandShape h, int indent)
+	{
+	/* <handShape chordId="27" endTime="26.958" startTime="26.409"/> */
+	std::string t = "";
+	switch(indent)
+		{
+		case 4: "\t\t";
+		case 2: "\t\t"; break;
+		}
+	arrangement << t << "<handShape startTime=\"" << h.time << "\" endTime=\"" 
+	<< h.duration << "\" chordId=\"" << h.id << "\" />\n";
+	}	
+
+void RSXMLWrite::writeChord(ofstream& arrangement, Chord c, int indent)
+	{
+	/* <chord time="48.379" linkNext="0" accent="0" chordId="0" 
+	fretHandMute="0" highDensity="0" ignore="0" palmMute="0" strum="down">
+	*/
+	std::string t = "";
+	switch(indent)
+		{
+		case 4: "\t\t";
+		case 2: "\t\t"; break;
+		}
+	arrangement << t << "<chord time=\"" << c.getTime() << "\" linkNext=\""
+	<< c.getLinkNext() << "\" accent=\"" << c.getAccent() << "\" chordId=\"" 
+	<< c.getID() << "\" fretHandMute=\"" << c.getFretHandMute() 
+	<< "\" highDensity=\"" << c.getHighDensity() << "\" ignore=\"" 
+	<< c.getIgnore() << "\" palmMute=\"" << c.getPalmMute() << "\" strum=\""
+	<< c.getStrum() << "\" />\n";
+	for(std::vector<Note>::iterator it = c.getNotes().begin();
+		it != c.getNotes().end(); ++it)
+		{
+		Note cN(*it);
+		writeNote(arrangement, cN, (indent+1));
+		}
+	arrangement << t << "</chord>\n";
+	}
+
+void RSXMLWrite::writeNote(ofstream& arrangement, Note n, int indent)
 	{
 	/* <note time="111.460" linkNext="0" accent="0" bend="1" fret="17" 
 	hammerOn="0" harmonic="0" hopo="0" ignore="0" leftHand="-1" mute="0" 
@@ -157,15 +216,16 @@ void RSXMLWrite::writeNote(ofstream arrangement, Note n, int indent)
 	accent, harmonicPinch, mute, pickDirection, tap, vibrato, // new.
 	ignore, linkNext; // Miscellaneous. The latter is new, but neither are in.
 	
-	string t = "";
-	switch(indent)
+	std::string t = "";
+	// We can for now assume that an indent of 5 or 3 means it's in a chord.
+	switch(indent) 	
 		{
-		case 5: t += "\t";
+		case 5: t += "\t\t";
+		case 3: t += "\t\t\t<chordN"; break;
 		case 4: t += "\t\t";
-		case 2: t += "\t\t"; break;
+		case 2: t += "\t\t<n"; break;
 		}
-		
-	arrangement << t << "<note time=\"" << n.getTime() << "\" duration=\"" 
+	arrangement << t << "ote time=\"" << n.getTime() << "\" duration=\"" 
 	<< n.getDuration() << "\" string=\"" << n.getString() << "\" fret=\"" 
 	<< n.getFret() << "\" ignore=\"" << ignore << "\" linkNext=\""
 	<< linkNext << "\" harmonic=\"" << harmonic << "\" hopo=\"" << hopo

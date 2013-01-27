@@ -36,9 +36,9 @@ enum eTechnique
 	none,
 	// Bends may need to be expanded in the future with new bend additions.
 	bendHalf, bendFull,
-	harmonic,
-	hammerOn,
 	fretHandMute,
+	hammerOn,
+	harmonic,
 	palmMute,
 	pickUp, pickDown,
 	pinchHarmonic,
@@ -84,9 +84,15 @@ class Note
 	int minDif;
 	// int maxDif;
 	
+	// Techniques
 	eTechnique technique; int techDif; // Difficulty when technique is added.
-	int slide;
+	
 	float bendTime, bendStep; // if the bend is expanded as expected.
+	bool fretHandMute;
+	bool hammerOn;
+	bool harmonic;
+	bool palmMute;
+	int slide;
 	
 	public:
 		Note(float t = -1.0, int s = -1, int p = -1, int d = -1);
@@ -100,11 +106,36 @@ class Note
 		int getPitch() { return pitch; };
 		int getFret() { return fret; };
 		int getDif() { return minDif; };
+		// Techniques
+		bool getFretHandMute() 
+			{ return (technique == fretHandMute)? true : false; }
+		bool getHammerOn() { return (technique == hammerOn)? true : false; }
+		bool getHarmonic() { return (technique == harmonic)? true : false; }
+		bool getPalmMute() { return (technique == palmMute)? true : false; }
 		 
 		void setDuration(float d) { duration = d; };
 		// This should only be called after we have the right tuning.
 		void setFret() { fret = pitch - stringPitch[string]; };	
-		void setTechnique(eTechnique t, int d) { technique = t; techDif = d; };
+		void setTechnique(eTechnique t, int d) 
+			{ 
+			technique = t; techDif = d; 
+			if (t == bendHalf) setBend(1.000);
+			else if(t == bendFull) setBend(2.000);	
+			else if(t == fretHandMute) fretHandMute = true;
+			else if(t == hammerOn) hammerOn = true;
+			else if(t == harmonic) harmonic = true;
+			else if(t == palmMute) palmMute = true;
+	/*pickUp, pickDown,
+	pinchHarmonic,
+	pullOff,
+	slide, slideUnpitch,
+	// I'm guessing 'leftHand' and 'rightHand' are related to tapping.
+	tapLeft, tapRight, 
+	tremolo,
+	vibrato,
+	// Bass
+	slap, pluck, */
+			};
 		void setSlide(int fret) { slide = fret; };
 		// void setBend(float bT, float bS) { bendTime = bT; bendStep = bS; };
 		void setBend(float b) { bendTime = time; bendStep = b; };
@@ -148,24 +179,45 @@ float convertTempo2TimeFloat(float tempo)
 	f = beat / ONESECONDMILLI;
 	return f;
 	};
+	
+// Common methods
+/* template <class T>	
+void addX(T source, std::vector<T>& dest) { dest.push_back(source); } */
+	
+template <class T>
+void addXs(const std::vector<T>& source, std::vector<T>& dest)
+	{
+	for(typename std::vector<T>::const_iterator it = source.begin();
+		it != source.end(); ++it)
+		{ dest.push_back(*it); }
+	}
+
+/* template <class X>
+X getX(std::vector<X> source, int i)
+	{ return source.at(i); } */
+	
+/* template <class X>
+std::vector<X> getXs(std::vector<X> source)
+	{ return source; } */
 
 template <class T>
-std::vector<T> getXsWithinTime(std::vector<T> source, 
-	float a, float b)
+std::vector<T> getXsWithinTime(std::vector<T> source, float a, float b)
 	{
 	std::vector<T> x;
-	float t;
+	float t = 0.0;
 	for(typename std::vector<T>::iterator it = source.begin();
 		it != source.end(); ++it)
 		{
-		T& cX = *it;
+		T cX(*it);
 		t = cX.getTime();
-		if(t > b) { return x; }
+		if(t > b) { break; }
 		if(t >= a) { x.push_back(cX); }
 		}
+	return x;
 	}
+
 	
-template <class T>
+/* template <class T>
 std::vector<T> getXsCopyWithinTime(const std::vector<T> source, 
 	float a, float b)
 	{
@@ -179,6 +231,6 @@ std::vector<T> getXsCopyWithinTime(const std::vector<T> source,
 		if(t > b) { return x; }
 		if(t >= a) { x.push_back(cX); }
 		}
-	}
+	} */
 	
 #endif

@@ -3,16 +3,17 @@
 // Public methods
 void CreateArrangement::process()
 	{
+	// Beat grid is independent of anything else.
+	createBeatGrid();
+	
 	// First things first, we need to sort out the tuning.
 	// Tuning process.
 	
-	
 	/* We need to apply the various techniques that may be applicable to a 
-	note. We may as well get it done first. */
-	techniques();
+	note before adding it to the Arrangement. */
+	compileNotes();
 	
-	// Creating a beat grid now will pay off down the line.
-	createBeatGrid();
+
 	
 	createDifficulties();
 	
@@ -35,13 +36,14 @@ void CreateArrangement::process()
 	there-in. */
 	createSections(); // stores sections in vSections.
 	createPhrases(); // stores phrases in vPhrases.
+	compileStructure(); // Stores write-ready structure data to Arrangement.
 	/* Difficulties present an issue insofar as a certain phrase may 'skip' 
 	difficulties; similarly, optimising contents above the maximum difficulty 
 	of a phrase is necessary. */
 	}
 
 // Private methods
-void CreateArrangement::techniques()
+void CreateArrangement::compileNotes()
 	{
 	metaX.clear();
 	vector<Meta> metaX(track.getMetas(tech));
@@ -50,7 +52,8 @@ void CreateArrangement::techniques()
 	over the former to reduce redundant searches. We know all meta-events 
 	and notes were created in a chronological order (at least with MIDI we do),
 	so we don't have to worry about backtracking issues. */
-	std::vector<Note>::iterator jt = allNotes.begin();
+	std::vector<Note> tempNotes;
+	std::vector<Note>::iterator jt = track.getNotes().begin();
 	for(std::vector<Meta>::iterator it = metaX.begin();
 		it != metaX.end(); ++it)
 		{
@@ -59,7 +62,7 @@ void CreateArrangement::techniques()
 		/* We shouldn't need to reset this iterator to the beginning ever.
 		That said, if any meta events are misaligned with the note, 
 		we're buggered. */
-		for(jt; jt != allNotes.end(); ++jt)
+		for(jt; jt != track.getNotes().end(); ++jt)
 			{
 			Note cN = *jt;
 			nTime = cN.getTime();
@@ -85,24 +88,30 @@ void CreateArrangement::techniques()
 					t = slide;
 					std::vector<Note>::iterator nextNote = jt;
 					++nextNote;
-					Note nN = *nextNote;
+					Note nN(*nextNote);
 					cN.setSlide(nN.getFret());
 					// We also want to skip this next note.
 					++jt;
 					}
 				
 				cN.setTechnique(t,0); // Needs to implement difficulties.
-				
+				tempNotes.push_back(cN);
 				t = none; break;
 				}
 			}
 		// Just in case...
-		if(jt == allNotes.end()) { jt = allNotes.begin(); }		
+		if(jt == track.getNotes().end()) { jt = track.getNotes().begin(); }		
 		}
 		
-	for(std::vector<Note>::iterator it = allNotes.begin(); 
-		it != allNotes.end(); ++it) 
-		{ Note cN = *it; cN.setFret(); }
+	/* for(std::vector<Note>::iterator it = tempNotes.begin(); 
+		it != tempNotes.end(); ++it) 
+		{ 
+		Note cN(*it); cN.setFret(); 
+		vNotes.push_back(cN);
+		} */
+	for (Note &x : tempNotes) {
+		x.setFret(); vNotes.push_back(x);
+	}
 	}
 	
 void CreateArrangement::createBeatGrid()
@@ -139,12 +148,12 @@ void CreateArrangement::createDifficulties()
 	{
 	// Scans the vector containing all notes to identify unique difficulties.
 	bool match = false;
-	for(std::vector<Note>::iterator it = allNotes.begin();
-		it != allNotes.end(); ++it)
+	for(std::vector<Note>::iterator it = vNotes.begin();
+		it != vNotes.end(); ++it)
 		{
 		match = false;
 		Note x = *it;
-		for(std::vector<Note>::iterator jt = allNotes.begin();
+		for(std::vector<Note>::iterator jt = vNotes.begin();
 			jt != it; ++jt)
 			{
 			Note y = *jt;
@@ -209,7 +218,7 @@ void CreateArrangement::createPhrases()
 		
 		This isn't perfect, as it implies there are no difficulty 'jumps', 
 		but for now it'll do. */
-		std::vector<Note> tempN(getXsWithinTime(allNotes, p.getTime(), end));
+		std::vector<Note> tempN(getXsWithinTime(vNotes, p.getTime(), end));
 		int max = findMaxDif(tempN);
 		p.setMaxDif(max);
 		
@@ -217,6 +226,11 @@ void CreateArrangement::createPhrases()
 		}
 	assignIDs(vPhrases);
 	}	
+	
+void CreateArrangement::compileStructure()
+	{
+	
+	}
 	
 void CreateArrangement::difficulty(int i)
 	{

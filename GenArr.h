@@ -21,17 +21,18 @@ class CreateArrangement
 	std::vector<Chord> vChords;
 	std::vector<ChordTemplate> vChordTemplate;
 	std::vector<Note> vNotes;
-	std::vector<Note> allNotes;
 	
 	std::vector<Meta> metaX;
 	std::vector<int> difList;
 	
 	// Process Methods
-	void techniques();
+	void compileNotes();
 	void createBeatGrid();
 	void createDifficulties();
 	void createPhrases();
 	void createSections();
+	
+	void compileStructure();
 	
 	void difficulty(int i);
 	void chords();
@@ -53,6 +54,4 @@ CreateArrangement::CreateArrangement(Track t)
 	{ 
 	track = t; 
 	Arrangement a(t);
-	
-	allNotes = track.getNotes();
 	}
