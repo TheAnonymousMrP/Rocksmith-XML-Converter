@@ -1,34 +1,19 @@
 #ifndef _BASE_ARRANGE_
 #define _BASE_ARRANGE_
 
-#ifndef _BASE-DIFFICULTY_
+#ifndef _BASE_DIFFICULTY
 #include "BaseDifficulty.h"
 #endif
 
-#ifndef _BASE-STRUCTURE_
+#ifndef _BASE_STRUCTURE
 #include "BaseStructure.h"
 #endif
 
-#ifndef _BASE-TRACK_
+#ifndef _BASE_TRACK
 #include "BaseTrack.h"
 #endif
 
-#define DEFAULTSTRINGS 6
-
-// Functions
-template <class T>
-int findMaxDif(const std::vector<T>& source)
-	{
-	int max = 0, a = 0;
-	for(typename std::vector<T>::const_iterator it = source.begin(); 
-		it != source.end(); ++it)
-		{ T x = *it; a = x.getDif(); if(max < a) { max = a; } }
-	return max;
-	}
-	
 // Class declarations
-
-
 struct Beat
 	{
 	// int bar, beat;
@@ -41,94 +26,98 @@ struct Beat
 class ChordTemplate
 	{
 	int id; static int count; 
-	std::string name; 
-	std::string display; // Display name.
-	
 	int firstString;
+	int fret[NUMSTRINGS]; 
 	int finger[NUMSTRINGS]; 
-	int index[NUMSTRINGS]; // In co-operation with chordRef.
-	int minDif; // The lowest difficulty amongst the notes.
-	int maxDif; // The highest difficulty amongst the notes.
-	
-	std::vector<Note> notes;
 	
 	public:
-		ChordTemplate();
+		ChordTemplate(std::string n = "", std::string d = "");
+		ChordTemplate(const std::vector<Note>& notes, 
+			std::string n = "", std::string d = "");
 		ChordTemplate(const ChordTemplate&); // Copy constructor
 		~ChordTemplate() { };
 		
-		void addNote(Note n) { notes.push_back(n); }
+		std::string name; 
+		std::string display; // Display name.
 		
-		int getID() { return id; };
-		std::string getName() { return name; };
-		std::string getDisplayName() { return display; };
-		int getFirstString() { return firstString; };
-		int getMinDif() { return minDif; };
-		int getMaxDif() { return maxDif; };
-		int getDif() { return maxDif; };
+		const int& getID() const { return id; };
+		const int& getFirstString() const { return firstString; };
+		const int& getFret(int i) const { return fret[i]; };
+		const int& getFinger(int i) const { return finger[i]; };
 		
 		void setID() { id = count; count++; };
-		void setName(std::string s) { name = s; };
-		void setDisplayName(std::string s) { display = s; };
-		void setMinDif() 
-			{
-			int min, a;
-			for(std::vector<Note>::iterator it = notes.begin();
-				it != notes.end(); ++it)
-				{ Note x = *it; a = x.getDif(); if(a < min) { min = a; } }
-			minDif = min;
-			};
-		void setMaxDif() { maxDif = findMaxDif(notes); };
-			 
+		void setFingers() { };
 		
-		void reset() { count = 0; }; // Resets count for new arrangement.
+		// For quick-and-easy compares. Returns string of fingers and frets.
+		std::string toString() const {
+			std::string s = "";
+			for(int i = 0; i < NUMSTRINGS; ++i) {
+				unsigned char c = fret[i]; s += c; 
+				c = finger[i]; s += c;
+			}
+			return s;
+		}
+		
+		void reset() { count = 0; };
 		
 	};
 
 int ChordTemplate::count = 0;
 	
-ChordTemplate::ChordTemplate() 
-	{ }
+ChordTemplate::ChordTemplate(std::string n, std::string d) { 
+	name = n; display = d;
+	for(int i = 0; i < NUMSTRINGS; ++i)
+		{ fret[i] = -1; finger[i] = -1; }
+}
 	
-ChordTemplate::ChordTemplate(const ChordTemplate& c)
-	{
+ChordTemplate::ChordTemplate(const std::vector<Note>& notes, 
+	std::string n, std::string d) {
+	name = n; display = d;
+	for(int i = 0; i < NUMSTRINGS; ++i)
+		{ fret[i] = -1; finger[i] = -1; }
+	firstString = notes.at(0).getString();
+	for(const Note& n : notes){
+		int i = n.getString();
+		if(i >= 0 && i < NUMSTRINGS) { fret[i] = n.getFret(); }
+	}
+	setFingers();
+}
+	
+ChordTemplate::ChordTemplate(const ChordTemplate& c) {
 	id = c.id;
 	name = c.name;
 	firstString = c.firstString;
 	for(int i = 0; i < NUMSTRINGS; i++)
-		{ finger[i] = c.finger[i]; index[i] = c.index[i]; }
-	minDif = c.minDif;
+		{ fret[i] = c.fret[i]; finger[i] = c.finger[i]; }
+}	
 	
-	std::vector<Note> notes(c.notes);
-	}	
-	
-class Arrangement
-	{
+class Arrangement {
 	// Private
 	std::string name;
 	float duration;
-	int tuning[DEFAULTSTRINGS];	
+	eTuning tuning;
+	std::vector<Beat> beats;
 	std::vector<Section> sections;
 	std::vector<Difficulty> difficulties;
 	std::vector<Note> vNotes;
 	std::vector<Chord> vChords;
 	std::vector<Anchor> vAnchors;
 	std::vector<HandShape> vHands;
-	std::vector<Beat> beats;
-	Track trackCopy; // redundant, but maybe helpful?
 	
 	public:
-		Arrangement() { name = ""; duration = 0.0; };
-		Arrangement(Track t); // For 'slimline' version
-		Arrangement(const Arrangement& a); // Copy constructor
+		Arrangement() : name(""), duration(0.0), tuning(eTuning::standardE)
+			{ };
+		Arrangement(const Track& t) { name = t.name; duration = t.duration; };
+		Arrangement(const Arrangement& a) : 
+			beats(a.beats), sections(a.sections), difficulties(a.difficulties),
+			vNotes(a.vNotes), vChords(a.vChords), vAnchors(a.vAnchors), 
+			vHands(a.vHands) { name = a.name; duration = a.duration; };
 		// Arrangement operator=(const Arrangement& a); // Assignment operator.
-		~Arrangement();
+		~Arrangement() { };
 		
-		void addSection(Section s) { sections.push_back(s); }
 		void addSections(std::vector<Section> s) 
 			{ addXs(s, sections); };
 		
-		void addDifficulty(Difficulty d) { difficulties.push_back(d); };
 		void addDifficulties(std::vector<Difficulty> d) 
 			{ addXs(d, difficulties); };
 		
@@ -137,50 +126,40 @@ class Arrangement
 		void addAnchors(std::vector<Anchor> a) { addXs(a, vAnchors); };
 		void addHands(std::vector<HandShape> h) { addXs(h, vHands); };
 		
-		std::string getName() { return name; };
-		float getDuration() { return duration; };
-		int getTuning(int i) { return tuning[i]; };
-		// Returns number of difficulties.
-		int getNumDifficulties(int i) { return difficulties.size(); }; 
-		int getNumNotes(int i) { return vNotes.size(); };
+		const std::string& getName() const { return name; };
+		const float& getDuration() const { return duration; };
+		const eTuning& getTuning() const { return tuning; };
 		
-		std::vector<Section> getSections() { return sections; };
-		std::vector<Difficulty> getDifficulties() { return difficulties; };
-		std::vector<Note> getNotes() { return vNotes; };
-		std::vector<Chord> getChords() { return vChords; };
-		std::vector<Anchor> getAnchors() { return vAnchors; };
-		std::vector<HandShape> getHands() { return vHands; };
-		std::vector<Beat> getBeats() { return beats; };
+		const std::vector<Section>& getSections() const { return sections; };
+		const std::vector<Difficulty>& getDifficulties() const 
+			{ return difficulties; };
+		const int getNumDifficulties() const 
+			{ return difficulties.size(); }; 
+		const std::vector<Note>& getNotes() const 
+			{ return vNotes; };
+		const int getNumNotes() const { return vNotes.size(); };
+		const std::vector<Chord>& getChords() const 
+			{ return vChords; };
+		const std::vector<Anchor>& getAnchors() const 
+			{ return vAnchors; };
+		const std::vector<HandShape>& getHands() 
+			const { return vHands; };
+		const std::vector<Beat>& getBeats() const 
+			{ return beats; };
 		
-		// void setDifficulties(int i) { difficulties = i; };
-	};
-	
-Arrangement::Arrangement(Track t)
-	{
-	name = t.getName();
-	duration = t.getDuration();
-	std::vector<Tempo> tempo(t.getTempos());
-	Track trackCopy(t);
-	}
-	
-Arrangement::Arrangement(const Arrangement& a)
-	{
-	name = a.name;
-	duration = a.duration;
-	std::vector<Section> sections(a.sections);
-	std::vector<Beat> beats(a.beats);
-	trackCopy = a.trackCopy;
-	}
-	
-/* Arrangement::Arrangement operator=(const Arrangement& a)
-	{
-	
-	} */
-	
-Arrangement::~Arrangement()
-	{
-	
-	}
+		void setBeats(std::vector<Beat> b) { beats = b; };
+		
+		void setSections(std::vector<Section> s) { sections = s; };
+		void setDifficulties(std::vector<Difficulty> d) 
+			{ difficulties = d; };
+		
+		void setNotes(std::vector<Note> n) { vNotes = n; };
+		void setChords(std::vector<Chord> c) { vChords = c; };
+		void setAnchors(std::vector<Anchor> a) { vAnchors = a; };
+		void setHands(std::vector<HandShape> h) { vHands = h; };
+		
+		void setTuning(eTuning t) { tuning = t; };
+};
 
 
 #endif

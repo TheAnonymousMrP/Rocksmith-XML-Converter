@@ -1,15 +1,15 @@
 #ifndef _BASE_VOCALS_
 #define _BASE_VOCALS_
 
-#ifndef _BASE-TRACK_
+#ifndef _BASE_TRACK
 #include "BaseTrack.h"
 #endif
 
-struct Lyric
+struct Lyric : public BaseNote
 	{
-	float time;
-	float duration;
-	int pitch;
+	Lyric(float t = -1.0, float d = -1.0, int p = -1, std::string w = "")
+		{ time = t; duration = d; pitch = p; word = w; };
+	
 	std::string word;
 	};
 
@@ -25,8 +25,8 @@ class ArrVocal
 	
 	public:
 		ArrVocal() { };
-		ArrVocal(Track t);
-		ArrVocal(Track t, std::string fileName);
+		ArrVocal(const Track& t);
+		ArrVocal(const Track& t, std::string fileName);
 		ArrVocal(const ArrVocal& v);
 		~ArrVocal() { };
 		
@@ -35,23 +35,19 @@ class ArrVocal
 	
 	};
 	
-ArrVocal::ArrVocal(Track t)
+ArrVocal::ArrVocal(const Track& t)
 	{
 	eMeta l = lyrics; // We don't want confusion over the meaning of 'lyrics'.
 	getNotes(t);
 	vText = t.getMetas(l);
 	
 	std::vector<Meta>::iterator lastSuccess = vText.begin();
-	for(std::vector<Lyric>::iterator it = vLyrics.begin();
-		it != vLyrics.end(); ++it)
+	for(Lyric& l : vLyrics)
 		{
-		Lyric& cL(*it);
-		for(std::vector<Meta>::iterator jt = lastSuccess; 
-			jt != vText.end(); ++jt)
+		for(auto jt = lastSuccess; jt != vText.end(); ++jt)
 			{
-			Meta cM(*jt);
-			if(cL.time == cM.time)
-				{ cL.word = cM.text; lastSuccess = jt; break; }
+			if(l.getTime() == jt->time)
+				{ l.word = jt->text; lastSuccess = jt; break; }
 			}
 		}
 	
@@ -64,7 +60,7 @@ ArrVocal::ArrVocal(Track t)
 		{ cout << "Vocal mismatch. Offset of: " << offset << " notes.\n"; }
 	}	
 	
-ArrVocal::ArrVocal(Track t, std::string fileName)
+ArrVocal::ArrVocal(const Track& t, std::string fileName)
 	{ 
 	ext = true;
 	getNotes(t);
@@ -101,15 +97,9 @@ ArrVocal::ArrVocal(const ArrVocal& v)
 // Process methods ====
 void ArrVocal::getNotes(Track t)
 	{
-	for(std::vector<Note>::iterator it = t.getNotes().begin();
-		it != t.getNotes().end(); ++it)
+	for(Note& n : t.getNotes())
 		{
-		Note cN(*it);
-		Lyric l;
-		l.time = cN.getTime();
-		l.duration = cN.getDuration();
-		l.pitch = cN.getPitch();
-		l.word = "";
+		Lyric l(n.getTime(), n.getDuration(), n.getPitch());
 		vLyrics.push_back(l);
 		}
 	}

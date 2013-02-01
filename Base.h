@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#define ENDLINE << "\n";
 #define NUMSTRINGS 6
 
 #define ONEMINUTE 60.000
@@ -17,11 +16,10 @@
 #define DEFAULTTIMESIGNUM 4 // Default numerator for the time signature
 #define DEFAULTTIMESIGDEN 4 // Default denominator for the time signature
 
-int stringPitch[NUMSTRINGS]; // Holds the open-string pitch values.
+#define GOTHERE std::cout << "Got here!\n";
 
-enum eMeta
-	{
-	anchor = 0,
+enum eMeta {
+	anchor,
 	bend,
 	chord,
 	lyrics,
@@ -29,13 +27,13 @@ enum eMeta
 	phrase,
 	tech,
 	special,
-	};
+};
 	
-enum eTechnique
-	{
-	none,
+enum eTechnique {
+	none = -1,
+	accent,
 	// Bends may need to be expanded in the future with new bend additions.
-	bendHalf, bendFull,
+	bendHalf = 1, bendFull,
 	fretHandMute,
 	hammerOn,
 	harmonic,
@@ -50,114 +48,165 @@ enum eTechnique
 	vibrato,
 	// Bass
 	slap, pluck,
-	};
+};
 	
-struct Meta
+enum eTuning
 	{
+	standardE,
+	dropD,
+	standardD,
+	};
+
+namespace tuning {
+	const int standardE[NUMSTRINGS] = { 52, 57, 62, 67, 71, 76 }; 
+	const int dropD[NUMSTRINGS] = { 50, 57, 62, 67, 71, 76 };
+};
+
+// Functions
+float convertTempo2Beat(const float& tempo) {
+	return ONEMINUTE / tempo;
+};
+	
+int getTuning(eTuning tuning, int i) {
+	switch(tuning) {
+		case eTuning::standardE: return tuning::standardE[i]; 
+		case eTuning::dropD: return i = tuning::dropD[i];
+		default: return i = tuning::standardE[i];
+	}
+};
+	
+struct Meta {
 	float time;
 	std::string text;
-	};
+};
 	
-struct Tempo
-	{
+struct Tempo {
 	float time;
 	float tempo;
-	};
+};
 	
-struct TimeSig
-	{
+struct TimeSig {
 	float time;
 	int num; // Numerator. 
 	int denom; // Denominator. Negative power of 2.
 	int clock; // MIDI clocks in a metronome click.
 	int quart; // 32nd notes per quarter-note.
-	};
+};
+	
+class BaseNote {
+	protected:
+		float time;
+		float duration;
+		int pitch;
+		
+	public:
+		BaseNote(float t = -1.0, float d = -1.0, int p = -1)
+			{ time = t; duration = d; pitch = p; };
+	
+		const float& getTime() const { return time; };
+		const float& getDuration() const { return duration; };
+		const int& getPitch() const { return pitch; };
+		
+		void setDuration(float d) { duration = d; };
+};
 
-class Note
-	{
+class Note : public BaseNote {
 	// Private
-	float time;
-	float duration;
 	int string;
-	int pitch;
 	int fret;
-	int minDif;
+	int minDif; 
 	// int maxDif;
 	
 	// Techniques
-	eTechnique technique; int techDif; // Difficulty when technique is added.
+	int techDif; // Difficulty when technique is added.
 	
-	float bendTime, bendStep; // if the bend is expanded as expected.
-	bool fretHandMute;
-	bool hammerOn;
-	bool harmonic;
-	bool palmMute;
-	int slide;
+	static eTuning tuning;
 	
 	public:
 		Note(float t = -1.0, int s = -1, int p = -1, int d = -1);
 		// Note(float t, float dur, int s, int p, int dif);
-		Note(const Note& n); // Copy Constructor
+		// Note(const Note& n); // Copy Constructor
 		~Note() { };
 		
-		float getTime() { return time; };
-		float getDuration() { return duration; };
-		int getString() { return string; };
-		int getPitch() { return pitch; };
-		int getFret() { return fret; };
-		int getDif() { return minDif; };
+		int normalisedDif;
+		
 		// Techniques
-		bool getFretHandMute() 
-			{ return (technique == fretHandMute)? true : false; }
-		bool getHammerOn() { return (technique == hammerOn)? true : false; }
-		bool getHarmonic() { return (technique == harmonic)? true : false; }
-		bool getPalmMute() { return (technique == palmMute)? true : false; }
+		bool accent, fretHandMute, hammerOn, harmonic, palmMute, 
+		pinchHarmonic, pullOff, tremolo, vibrato;
+		int pick, tapLeft, tapRight, slide, slideUnpitch, slap, pluck;
+		float bendTime, bendStep; // if the bend is expanded as expected.
+		
+		const int& getString() const { return string; };
+		const int& getFret() const { return fret; };
+		const int& getDif() const { return minDif; };
+		// Techniques
+		const bool isBend() const { return (bendStep > 0)? true: false; };
 		 
-		void setDuration(float d) { duration = d; };
+		void setBend(float b) { bendTime = time; bendStep = b; }; 
 		// This should only be called after we have the right tuning.
-		void setFret() { fret = pitch - stringPitch[string]; };	
-		void setTechnique(eTechnique t, int d) 
-			{ 
-			technique = t; techDif = d; 
-			if (t == bendHalf) setBend(1.000);
-			else if(t == bendFull) setBend(2.000);	
-			else if(t == fretHandMute) fretHandMute = true;
-			else if(t == hammerOn) hammerOn = true;
-			else if(t == harmonic) harmonic = true;
-			else if(t == palmMute) palmMute = true;
-	/*pickUp, pickDown,
-	pinchHarmonic,
-	pullOff,
-	slide, slideUnpitch,
-	// I'm guessing 'leftHand' and 'rightHand' are related to tapping.
-	tapLeft, tapRight, 
-	tremolo,
-	vibrato,
-	// Bass
-	slap, pluck, */
-			};
-		void setSlide(int fret) { slide = fret; };
-		// void setBend(float bT, float bS) { bendTime = bT; bendStep = bS; };
-		void setBend(float b) { bendTime = time; bendStep = b; };
-	};
+		void setFret() { fret = pitch - getTuning(tuning, string); };	
+		void setTechnique(eTechnique t, int d) { 
+			techDif = d; 
+			switch(t) {
+				case eTechnique::accent: accent = true; break;
+				case eTechnique::bendHalf: 
+				case eTechnique::bendFull: setBend(t); break;
+				case eTechnique::fretHandMute: fretHandMute = true; break;
+				case eTechnique::hammerOn: hammerOn = true; break;
+				case eTechnique::harmonic: harmonic = true; break;
+				case eTechnique::palmMute: palmMute = true; break;
+				case eTechnique::pickUp: pick = 1; break;
+				case eTechnique::pickDown: pick = 0; break;
+				case eTechnique::pinchHarmonic: pinchHarmonic = true; break;
+				case eTechnique::pullOff: pullOff = true; break;
+				case eTechnique::tapLeft: tapLeft = 1; break;
+				case eTechnique::tapRight: tapRight = 1; break;
+				case eTechnique::tremolo: tremolo = true; break;
+				case eTechnique::vibrato: vibrato = true; break;
+				case eTechnique::slap: slap = 1; break;
+				case eTechnique::pluck: pluck = 1; break;
+				
+				// No effect;
+				case eTechnique::none: break;
+				case eTechnique::slide: break;
+				case eTechnique::slideUnpitch: break;
+				
+			}
+		};
+		
+		static void setTuning(eTuning t) { tuning = t; }
+		static int findLowestFret(const std::vector<Note>& source) {
+			int low = 0;
+			for(const Note& n : source) { (n.fret < low)? low = n.fret: low; }
+			return low;
+		}
+		
+		// Debug only.
+		const int& getPitch() const { return pitch; }
+};
+
+eTuning Note::tuning = eTuning::standardE;
 	
-Note::Note(float t, int s, int p, int d)
-	{
+Note::Note(float t, int s, int p, int d) {
 	time = t;
 	duration = 0;
 	string = s;
 	pitch = p;
 	fret = -1;
 	minDif = d;
+	normalisedDif = -1;
 	
-	technique = none; techDif = -1;
-	slide = -1;
-	bendTime = -1.0;
-	bendStep = -1.0;
-	}
+	techDif = -1;
+	accent = false; fretHandMute = false; hammerOn = false; harmonic = false;
+	palmMute = false; pinchHarmonic = false; pullOff = false; tremolo = false;
+	vibrato = false;
+	pick = 0; tapLeft = -1; tapRight = -1; slide = -1; slideUnpitch = -1;
+	slap = -1; pluck = -1;
 	
-Note::Note(const Note& n)
-	{
+	bendTime = -1.0; bendStep = -1.0;
+}
+	
+/* Note::Note(const Note& n) {
 	time = n.time;
 	duration = n.duration;
 	string = n.string;
@@ -169,28 +218,17 @@ Note::Note(const Note& n)
 	slide = n.slide;
 	bendTime = n.bendTime;
 	bendStep = n.bendStep;
-	}
-	
-// Functions
-float convertTempo2TimeFloat(float tempo)
-	{
-	float f = 0.0;
-	float beat = ONEMINUTEMILLI / tempo;
-	f = beat / ONESECONDMILLI;
-	return f;
-	};
+} */
 	
 // Common methods
 /* template <class T>	
 void addX(T source, std::vector<T>& dest) { dest.push_back(source); } */
 	
 template <class T>
-void addXs(const std::vector<T>& source, std::vector<T>& dest)
-	{
-	for(typename std::vector<T>::const_iterator it = source.begin();
-		it != source.end(); ++it)
+void addXs(const std::vector<T>& source, std::vector<T>& dest) {
+	for(auto it = source.begin(); it != source.end(); ++it)
 		{ dest.push_back(*it); }
-	}
+}
 
 /* template <class X>
 X getX(std::vector<X> source, int i)
@@ -199,23 +237,6 @@ X getX(std::vector<X> source, int i)
 /* template <class X>
 std::vector<X> getXs(std::vector<X> source)
 	{ return source; } */
-
-template <class T>
-std::vector<T> getXsWithinTime(std::vector<T> source, float a, float b)
-	{
-	std::vector<T> x;
-	float t = 0.0;
-	for(typename std::vector<T>::iterator it = source.begin();
-		it != source.end(); ++it)
-		{
-		T cX(*it);
-		t = cX.getTime();
-		if(t > b) { break; }
-		if(t >= a) { x.push_back(cX); }
-		}
-	return x;
-	}
-
 	
 /* template <class T>
 std::vector<T> getXsCopyWithinTime(const std::vector<T> source, 
@@ -232,5 +253,4 @@ std::vector<T> getXsCopyWithinTime(const std::vector<T> source,
 		if(t >= a) { x.push_back(cX); }
 		}
 	} */
-	
 #endif

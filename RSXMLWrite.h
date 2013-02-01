@@ -16,18 +16,23 @@ class RSXMLWrite
 	Arrangement arr; 
 	ArrVocal arrV;
 	
+	std::ofstream write;
+	
 	const std::vector<Section> vSection;
 	std::vector<int> vPhraseRef;
 	const std::vector<Phrase> vPhrase;
 	
 	float avgTempo; // May have no in-game effect. For now, '120'.
 	
-	void writeDifficulty(std::ofstream& arrangement, int dif);
+	void writeStructure();
 	
-	void writeAnchor(std::ofstream& arrangment, Anchor a, int indent = 4);
-	void writeChord(std::ofstream& arrangement, Chord c, int indent = 4);
-	void writeHand(std::ofstream& arrangement, HandShape h, int indent = 4);
-	void writeNote(std::ofstream& arrangement, Note n, int indent = 4);
+	void writeDifficulty(const Difficulty& d, bool trans = false);
+	
+	void writeNote(const Note& n, bool trans = false, bool chord = false);
+	void writeChord(const Chord& c, bool trans = false);
+	void writeAnchor(const Anchor& a, bool trans = false);
+	void writeHand(const HandShape& h, bool trans = false);
+	
 	
 	public:
 		RSXMLWrite();

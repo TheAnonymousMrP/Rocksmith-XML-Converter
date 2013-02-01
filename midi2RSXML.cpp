@@ -29,7 +29,17 @@ int main(int argc, char* argv[])
 			- "-midi": Indicates we're going to be reading from a MIDI
 			file. Not implemented yet. 
 			- "-logic" - This flag triggers a few assumptions based on 
-			how Logic prepares MIDI files. */
+			how Logic prepares MIDI files. 
+			
+	Known bugs:
+		- isChord(...):
+			-  If notes are not arranged in ascending or descending 
+			difficulty, this won't work properly. To mitigate the damage,
+			the method will continue so long as their is at least one further
+			note at same time. These 'bad' notes will be added to the current 
+			difficulty irrespective of their proper difficulty.
+			
+	*/
 			
 	std::string midiName = argv[1]; /* If a filename isn't the first argument, 
 	the program's going to fail. Also, don't get the filename wrong. 
@@ -39,48 +49,47 @@ int main(int argc, char* argv[])
 	int arrN = -1;
 	std::string arrTitle = "Arrangement";
 	
-	std::string midiMode = "";
 	for(int i = 2; i < argc; i++)
 		{ 
 		// Song title.
-		if(!strcmp(argv[i],"-title"))
+		if(!strcmp(argv[i],"-title")) 
 			{ if(argv[i+1] != NULL) { title = argv[i+1]; } }
 		// Number of arrangements.
-		if(!strcmp(argv[i],"-arr"))
+		/* if(!strcmp(argv[i],"-arr"))
 			{ 
 			if(argv[i+1] != NULL) 
 				{ std::string arrS = argv[i+1]; arrN = atoi(arrS.c_str()); } 
-			}
+			} */
 		// External Lyrics flag.
 		if(!strcmp(argv[i],"-extlyrics")) { externalLyrics = 1; }
 		// Palm-mute Toggle flag.
 		if(!strcmp(argv[i],"-palmtoggle")) { palmToggle = 1; }
 		// Logic flag.
-		if(!strcmp(argv[i],"-logic")) { midiMode = "logic"; }
+		if(!strcmp(argv[i],"-logic")) { midiMode = eMidi::logic; }
 		}
-		
-	MIDIRead midi;
-	midi.setFileName(midiName);
 	
+	MIDIRead midi(midiName, midiMode);
 	midi.process(arrN);
-	midi.debug(midiName);
+	// midi.debug();
 	
-	for(std::vector<Track>::iterator it = midi.getTracks().begin();
-		it != midi.getTracks().end(); ++it)
+	const std::vector<Track>& tracks = midi.getTracks();
+	
+	for(auto it = tracks.begin(); it != tracks.end(); ++it)
 		{
-		Track& cT(*it);
-		if(cT.getName() == "Vocals" || cT.getType() == vocal)
+		if(tracks.size() > 0 && (it - tracks.begin()) == 0) { }
+		else if(it->name == "Vocals" || it->type == vocal)
 			{
 			ArrVocal v;
 			if(externalLyrics)
-				{ ArrVocal v(cT, midiName); }
-			else { ArrVocal v(cT); }
+				{ ArrVocal v((*it), midiName); }
+			else { ArrVocal v((*it)); }
 			RSXMLWrite rsxml(midiName, v);
 			rsxml.processVocals();
 			}
 		else
 			{
-			CreateArrangement create(cT);
+			CreateArrangement create((*it));
+			create.process();
 			RSXMLWrite rsxml(midiName, title, create.getArrangement());
 			rsxml.processArrangement();
 			}
