@@ -17,25 +17,24 @@ class CreateArrangement {
 	
 	float timer;
 	std::vector<Beat> vBeats;
-	std::vector<Difficulty> vDifficulties;
-	std::vector<Section> vSections;
-	std::vector<Phrase> vPhrases;
 	std::vector<ChordTemplate> vChordTemplate;
+	std::vector<PhraseTemplate> vPhraseTemplate;
+	std::vector<Phrase> vPhrases;
+	std::vector<Section> vSections;
+	std::vector<Difficulty> vDifficulties;
+	std::vector<Note> vNotes;
 	std::vector<Chord> vChords;
 	std::vector<Anchor> vAnchors;
 	std::vector<HandShape> vHands;
-	std::vector<Note> vNotes;
-	
-	std::vector<int> difList;
 	
 	// Process Methods
 	void createBeatGrid();
 	void getTuning();
-	void compileNotes();
-	Difficulty createDifficulty(int i);
+	void setTechniques();
+	Difficulty createDifficulty(unsigned int i);
 		Chord createChord(const std::vector<Note>& nSource, 
-			std::vector<Note>::iterator& it, int chordSize);
-		void createAnchors(Difficulty& d, int dif);
+			std::vector<Note>::iterator it, int chordSize);
+		void createAnchors(Difficulty& d, unsigned int dif);
 
 	void createPhrases();
 	void createSections();

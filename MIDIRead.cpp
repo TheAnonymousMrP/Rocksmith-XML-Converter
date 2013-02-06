@@ -1,5 +1,4 @@
 #include "MIDIRead.h"
-using namespace std;
 
 // Public ====
 
@@ -10,8 +9,8 @@ void MIDIRead::process(int arrN) {
 		int fileSize = getMIDI(fileName);
 	
 		division = (memblock[12] * 256) + memblock[13]; /* The time division 
-		is stored as a short in bytes 12 and 13. This is an inelegant - yet 
-		accurate - solution, code-reusability be damned. */
+		is stored as a short in bytes 12 and 13. This is an inelegant  yet 
+		accurate  solution, code-reusability be damned. */
 		
 		// Single-track case.
 		if(memblock[9] == 0) { processTrack(HEADER); }
@@ -43,15 +42,15 @@ void MIDIRead::debug() {
 	
 	for(auto it = tracks.begin(); it != tracks.end(); ++it) 
 		{
-		file << "Track " << (it - tracks.begin()) << ": Name: "
+		file << "Track " << (it  tracks.begin()) << ": Name: "
 		<< it->name << " | Duration: " << it->duration ENDLINE
-		cout << "Track " << (it - tracks.begin()) << ": Name: "
+		cout << "Track " << (it  tracks.begin()) << ": Name: "
 		<< it->name << " | Duration: " << it->duration ENDLINE
 		std::vector<Note> notes = it->getNotes();
 		// Should print all notes in a track.
 		for(auto jt = notes.begin(); jt != notes.end(); ++jt)
 			{
-			file << "Note " << jt - notes.begin() << " - Time: " 
+			file << "Note " << jt  notes.begin() << "  Time: " 
 			<< jt->getTime() << " | String: " << jt->getString() ENDLINE
 			}
 		file << "\nMetadata:" ENDLINE
@@ -63,7 +62,7 @@ void MIDIRead::debug() {
 		/* file << "Phrases: " ENDLINE
 		auto mPhrase = it->getMetas(eMeta::phrase);
 		for(Meta& m : mPhrase) {
-			file << "Phrase - Time: " << m.time << " | Name: " 
+			file << "Phrase  Time: " << m.time << " | Name: " 
 			<< m.text ENDLINE
 		} */
 		file << "END OF TRACK. \n" ENDLINE
@@ -168,13 +167,13 @@ int MIDIRead::processTrack(int beginPoint) {
 			our charts but they may have implications down the line. */
 				{
 				// All controller events are 3 bytes in length.
-				// cout << i << " - Controller event." ENDLINE
+				// cout << i << "  Controller event." ENDLINE
 				i += METALENGTH;
 				}
 			else if(memblock[i+1] >= 0xC0 && memblock[i+1] < 0xE0)
 			// Program change and aftertouch events. Irrelevant to us.
 				{
-				// cout << i << " - Program Change event." ENDLINE
+				// cout << i << "  Program Change event." ENDLINE
 				i += METALENGTH-1;
 				}
 			else if(memblock[i+1] >= 0xE0 && memblock[i+1] < 0xF0)
@@ -182,7 +181,7 @@ int MIDIRead::processTrack(int beginPoint) {
 			a direct line to string-bend events. An intermediary for now is
 			using the 'T' text event to specify bends. */
 				{
-				// cout << i << " " << timer << " - Pitch Bend event." ENDLINE
+				// cout << i << " " << timer << "  Pitch Bend event." ENDLINE
 				i += METALENGTH;
 				}
 			else
@@ -211,8 +210,8 @@ void MIDIRead::addNote(int i, float deltaConv, Track& currentTrack) {
 	pitch = memblock[i+2];
 	vel = memblock[i+3];
 	int string = 0;
-	if(channel >= 0x90)	{ string = channel - 0x90; }
-	else if(channel >= 0x80) { string = channel - 0x80; }
+	if(channel >= 0x90)	{ string = channel  0x90; }
+	else if(channel >= 0x80) { string = channel  0x80; }
 	Note n(deltaConv, string, pitch, vel);
 
 	/* Putting it into a vector.
@@ -387,15 +386,15 @@ The use of pow() compensates for the exponential increase in the value of
 additional bytes. As MIDI uses big-endian numbers, the first byte is the 
 largest, which is why the second parameter of pow() represents a decreasing 
 number as we continue.
-	- offset should be the location of byte BEFORE the first (largest) byte.
+	 offset should be the location of byte BEFORE the first (largest) byte.
 	Counterintuitive, but whatever.
-	- length is the number of bytes we need to convert. */	
+	 length is the number of bytes we need to convert. */	
 float MIDIRead::convertBytes2Int(int offset, int length) {
 	float buffer = 0;
 	for(int i = 1; i <= length; i++)
 		// 'byte' * pow(256.0, 'decrementing counter')
-		{ buffer += (int)memblock[offset+i] * pow(256.0,(length - i)); }
-	// It shouldn't be possible to have non-integral values, FYI.
+		{ buffer += (int)memblock[offset+i] * pow(256.0,(length  i)); }
+	// It shouldn't be possible to have nonintegral values, FYI.
 	// cout << "Timer: " << timer << " | Buffer: " << buffer ENDLINE
 	return buffer; 
 }
@@ -403,7 +402,7 @@ float MIDIRead::convertBytes2Int(int offset, int length) {
 float MIDIRead::convertBytes2VLQ(int offset, int length) {
 	float buffer = memblock[offset];
 	for(int i = 1; i <= length; i++)
-		{ buffer += ((int)memblock[offset-i] - 0x80) * pow(128.0,i); }
+		{ buffer += ((int)memblock[offset-i]  0x80) * pow(128.0,i); }
 	// cout << (int)byte << " / " << f << " | ";
 	return buffer;
 }
@@ -468,7 +467,7 @@ void MIDIRead::processContent(unsigned int& it, const float& timer) {
 int MIDIRead::convertBytes2VLQ2(const std::vector<unsigned char>& vlq) {
 	int buffer = 0;
 	for(auto it = vlq.begin(); it != vlq.end(); ++it) 
-		{ buffer += ((int)(*it) - 0x80) * pow(128,(it - vlq.begin())); }
+		{ buffer += ((int)(*it)  0x80) * pow(128,(it  vlq.begin())); }
 	return buffer;
 }
 

@@ -69,13 +69,13 @@ void RSXMLWrite::processArrangement() {
 	/* Transcription Track -- whatever that is. It seems to be one full 
 	difficulty of a song. Maybe max? */
 	const std::vector<Difficulty>& difficulties = arr.getDifficulties();
-	writeDifficulty(difficulties.back(), true); 
+	writeDifficulty(difficulties.back(), -1, true); 
 	// Levels -- where shit gets real.
 	/* <levels count="30">
     		<level difficulty="0"> */
     write << "\t<levels count=\"" << difficulties.size() << "\" >\n";
-    for(const Difficulty& d : difficulties)
-    	{ writeDifficulty(d); }
+    for(auto it = difficulties.begin(); it != difficulties.end(); ++it)
+    	{ writeDifficulty((*it), (it - difficulties.begin())); }
     write << "\t</levels>\n";
     write << "</song>";
     write.close();
@@ -109,20 +109,62 @@ void RSXMLWrite::processVocals() {
 
 void RSXMLWrite::writeStructure() {
 	// Phrases - 'phrase' and 'phraseIterations' ---
-	
+	/* <phrase disparity="0" ignore="0" maxDifficulty="0" name="INTROBAR" 
+	solo="0"/> */
+	auto& phrases = arr.getPhraseTemplates();
+	write << "\t<phrases count=\"" << phrases.size() << "\">\n";
+	for(auto& t : phrases) {
+		write << "\t\t<phrase name=\"" << t.name << "\" maxDifficulty=\""
+		<< t.maxDif << "\" disparity=\"" << t.disparity << "\" ignore=\"" 
+		<< t.ignore << "\" solo=\"" << t.solo << "\" />\n";
+	}
+	write << "\t</phrases>\n";
+	// <phraseIteration time="10.000" phraseId="0" variation=""/>
+	auto& phraseIt = arr.getPhrases();
+	write << "\t<phraseIterations count=\"" << phraseIt.size() << "\">\n";
+	for(auto& p : phraseIt) {
+		/* Variation always seems to be incremented. This may be dependent
+		on whether the contents are changed, but maybe not. Slightly 
+		complicating matters is that the 'official' way seems to be to use
+		roman numerals. */
+		std::string var = std::to_string(p.getVariation());
+		write << "\t\t<phraseIteration time=\"" << p.getTime() 
+		<< "\" phraseId=\"" << p.getID() << "\" variation=\"" << var 
+		<< "\" />\n";
+	}
+	write << "\t</phraseIterations>\n";
+	// Chord Templates
+	/* <chordTemplate chordName="" displayName="ggd" finger0="-1" finger1="-1" 
+	finger2="-1" finger3="-1" finger4="1" finger5="3" fret0="-1" fret1="-1" 
+	fret2="-1" fret3="0" fret4="8" fret5="10"/> */
+	auto& chords = arr.getChordTemplates();
+	write << "\t<chordTemplates count=\"" << chords.size() << "\">\n";
+	for(auto& t : chords) {
+		write << "\t\t<chordTemplate chordName=\"" << t.name
+		<< "\" displayName=\"" << t.display << "\" ";
+		// Frets
+		for(int i = 0; i < NUMSTRINGS; ++i) {
+			write << "fret" << i << "=\"" << t.getFret(i) << "\" ";
+		}
+		// Fingers
+		for(int i = 0; i < NUMSTRINGS; ++i) {
+			write << "finger" << i << "=\"" << t.getFinger(i) << "\" ";
+		}
+		write << " />\n";
+	}
+	write << "\t</chordTemplates>\n";
 	// Beat Grid
-	const std::vector<Beat>& beats = arr.getBeats();
+	auto& beats = arr.getBeats();
 	write << "\t<ebeats count=\"" << beats.size() << "\">\n";
-	for(const Beat& b : beats)
-		{
+	for(auto& b : beats) {
 		write << "\t\t<ebeat time=\"" << b.time << "\" measure=\""
 		<< b.bar << "\" />\n";
-		}
+	}
 	write << "\t</ebeats>\n";
 	// Sections
-	const std::vector<Section>& sections = arr.getSections();
+	auto& sections = arr.getSections();
 	write << "\t<sections count=\"" << sections.size() << "\">\n";
-	for(const Section& s : sections) {
+	for(auto& s : sections) {
 		write << "\t\t<section name=\"" << s.getName() 
 		<< "\" number=\"" << s.getID() << "\" startTime=\"" 
 		<< s.getTime() << "\" />\n";
@@ -130,40 +172,37 @@ void RSXMLWrite::writeStructure() {
 	write << "\t</sections>\n";
 }
 
-void RSXMLWrite::writeDifficulty(const Difficulty& d, bool trans) {
+void RSXMLWrite::writeDifficulty(const Difficulty& d, int dif, bool trans) {
 	/* <level difficulty="0"> */
 	std::string t = "";
-	if(trans) { 
-		t += "\t"; write << t << "<transcriptionTrack difficulty=\"-1\">\n"; 
-	}
-	else {
-		t += "\t\t"; write << t << "<level difficulty=\"" 
-		<< d.getDifficulty() << "\">\n"; 
-	}
+	if(trans) { t += "\t"; write << t << "<transcriptionTrack "; }
+	else { t += "\t\t"; write << t << "<level "; }
+	
+	write << "difficulty=\"" << dif << "\">\n"; 
 	// <notes count="47">
 	auto& nSource(arr.getNotes());
 	auto& nPointer(d.getNotesI());
 	auto& notes(getXsFromIs(nSource, nPointer));
-	write << t << "\t<notes count=\"" << nPointer.size() << "\">\n";
+	write << t << "\t<notes count=\"" << notes.size() << "\">\n";
 	for(const Note& n : notes) 
 		{ writeNote(n, trans); }
 	write << t << "\t</notes>\n";
 	// Chords
-	const std::vector<Chord>& cSource(arr.getChords());
+	auto& cSource(arr.getChords());
 	auto& cPointer(d.getChordsI());
-	const std::vector<Chord> chords(getXsFromIs(cSource, cPointer));
-	write << t << "\t<chords count=\"" << cPointer.size() << "\">\n";
+	auto& chords(getXsFromIs(cSource, cPointer));
+	write << t << "\t<chords count=\"" << chords.size() << "\">\n";
 	for(const Chord& c : chords)
 		{ writeChord(c, trans); }
-	write << t << "\t</chord>\n";
+	write << t << "\t</chords>\n";
 	// Anchors
-	const std::vector<Anchor>& aSource(arr.getAnchors());
+	auto& aSource(arr.getAnchors());
 	auto& aPointer(d.getAnchorsI());
-	const std::vector<Anchor>& anchors(getXsFromIs(aSource, aPointer));
-	write << t << "\t<anchors count=\"" << aPointer.size() << "\">\n";
+	auto& anchors(getXsFromIs(aSource, aPointer));
+	write << t << "\t<anchors count=\"" << anchors.size() << "\">\n";
 	for(const Anchor& a : anchors)
 		{ writeAnchor(a, trans); }
-	write << t << "\t</anchor>\n";
+	write << t << "\t</anchors>\n";
 	// Handshapes
 	const std::vector<HandShape>& hSource(arr.getHands());
 	auto& hPointer(d.getHandsI());
@@ -236,7 +275,7 @@ void RSXMLWrite::writeChord(const Chord& c, bool trans) {
 	*/
 	std::string t = "";
 	if(!trans) { t = "\t\t"; }
-	t += "\t\t";
+	t += "\t\t\t";
 	write << t << "<chord time=\"" << c.getTime() << "\" linkNext=\""
 	<< c.getLinkNext() << "\" accent=\"" << c.getAccent() << "\" chordId=\"" 
 	<< c.getID() << "\" fretHandMute=\"" << c.getFretHandMute() 
@@ -244,9 +283,11 @@ void RSXMLWrite::writeChord(const Chord& c, bool trans) {
 	<< c.getIgnore() << "\" palmMute=\"" << c.getPalmMute() << "\" strum=\""
 	<< c.getStrum() << "\" />\n";
 	// Writing the individual notes.
-	const std::vector<Note>& nSource(arr.getNotes());
-	for(auto it = c.getNotesI().begin(); it != c.getNotesI().end(); ++it)
-		{ Note n = nSource.at((*it)); writeNote(n, trans, true); }
+	auto& nSource(arr.getNotes());
+	auto& nPointer(c.getNotesI());
+	auto& notes(getXsFromIs(nSource, nPointer));
+	for(auto& n : notes)
+		{ writeNote(n, trans, true); }
 	write << t << "</chord>\n";
 }
 
@@ -254,7 +295,7 @@ void RSXMLWrite::writeAnchor(const Anchor& a, bool trans) {
 	/* <anchor time="11.579" fret="8" width="4.000"/> */
 	std::string t = ""; 
 	if(!trans) { t = "\t\t"; }
-	t += "\t\t";
+	t += "\t\t\t";
 	write << t << "<anchor time=\"" << a.time << "\" fret=\""
 	<< a.fret << "\" width=\"" << a.width << "\" />\n";
 }
@@ -263,7 +304,7 @@ void RSXMLWrite::writeHand(const HandShape& h, bool trans) {
 	/* <handShape chordId="27" endTime="26.958" startTime="26.409"/> */
 	std::string t = ""; 
 	if(!trans) { t = "\t\t"; }
-	t += "\t\t";
+	t += "\t\t\t";
 	write << t << "<handShape startTime=\"" << h.time << "\" endTime=\"" 
 	<< h.duration << "\" chordId=\"" << h.id << "\" />\n";
 }	

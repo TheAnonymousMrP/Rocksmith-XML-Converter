@@ -17,6 +17,7 @@ enum eTrackType
 
 class Track {
 	// Private
+	unsigned int maxDif;
 	
 	std::vector<Note> notes;
 	std::vector<Note> noteOn;
@@ -42,12 +43,14 @@ class Track {
 			noteOff(t.noteOff), mAnchor(t.mAnchor), mBend(t.mBend),
 			mChord(t.mChord), mMarker(t.mMarker), mPhrase(t.mPhrase),
 			mTech(t.mTech), mLyrics(t.mLyrics), mSpecial(t.mSpecial),
-			mTempo(t.mTempo), mTimeSig(t.mTimeSig)
-			{ name = t.name; duration = t.duration; type = t.type; };
+			mTempo(t.mTempo), mTimeSig(t.mTimeSig) { 
+			name = t.name; duration = t.duration; type = t.type; 
+			maxDif = t.maxDif; 
+		};
 		~Track() { };
 		
 		std::string name;
-		float duration;
+		float duration; 
 		eTrackType type;
 
 		void addNoteOn(Note n);
@@ -57,6 +60,7 @@ class Track {
 		void addTimeSig(TimeSig t);
 		
 		// Note getNote(int i);
+		const unsigned int& getMaxDif() const { return maxDif; };
 		const int getNumNotes() const { return notes.size(); };
 		std::vector<Note>& getNotes(); // Copy
 		const std::vector<Note>& getNotes() const;
@@ -66,7 +70,7 @@ class Track {
 		const std::vector<Meta>& getMetas(eMeta m) const; // Copy	
 		
 		// const Tempo& getTempo(int i) const { return mTempo.at(i); }; 
-		Tempo getTempo(int i) const {
+		Tempo getTempo(unsigned int i) const {
 			if(i < mTempo.size()) { return mTempo.at(i); }
 			else { Tempo t; t.time = -1; return t; }
 		};
@@ -79,7 +83,8 @@ class Track {
 		void setTempos(std::vector<Tempo> tempos) { mTempo = tempos; };
 		void setTimeSigs(std::vector<TimeSig> times) { mTimeSig = times; };
 		
-		void sortNotes(); // Reduce the On and Off vectors to a single vector.
+		void sortNotes(); // Convert the On and Off vectors to a single vector.
+		void normaliseDifs(); // Sort note difficulties into a normalised form.
 	};
 	
 // Public ====
@@ -171,7 +176,7 @@ void Track::setMetas(std::vector<Meta> metas, eMeta m) {
 }
 
 // Miscellaneous methods
-void Track::sortNotes() // Convert the On and Off vectors into a single vector.
+void Track::sortNotes() 
 	{
 	if(noteOn.size() == noteOff.size()) {
 		
@@ -183,6 +188,29 @@ void Track::sortNotes() // Convert the On and Off vectors into a single vector.
 				Note n((*it)); n.setDuration((*jt).getTime() - n.getTime()); 
 				notes.push_back(n);
 			}
+		}
+	}
+}
+void Track::normaliseDifs() {
+	std::vector<unsigned int> difs;
+	bool match = false;
+	for(auto it = notes.begin(); it != notes.end(); ++it) {
+		match = false;
+		for(auto jt = notes.begin(); jt != it; ++jt) {
+			if(it->minDif == jt->minDif) { match = true; break; }
+		}
+		if(!match) { difs.push_back(it->minDif); }
+	}
+	maxDif = difs.size()-1;
+
+	// Sorts the vector into order.
+	sort(difs.begin(),difs.end());
+	
+	for(Note& n : notes) { 
+		// Set a normalised difficulty.
+		for(auto it = difs.begin(); it != difs.end(); ++it) {
+			if(n.minDif == (*it)) 
+				{ n.minDif = (it - difs.begin()); break; }
 		}
 	}
 }

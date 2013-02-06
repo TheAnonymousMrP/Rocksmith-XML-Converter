@@ -5,13 +5,12 @@
 #include "BaseTrack.h"
 #endif
 
-struct Lyric : public BaseNote
-	{
+struct Lyric : public BaseNote {
 	Lyric(float t = -1.0, float d = -1.0, int p = -1, std::string w = "")
 		{ time = t; duration = d; pitch = p; word = w; };
 	
 	std::string word;
-	};
+};
 
 class ArrVocal
 	{

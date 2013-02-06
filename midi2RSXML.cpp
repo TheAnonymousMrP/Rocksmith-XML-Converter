@@ -1,8 +1,7 @@
 #include "midi2RSXML.h"
 using namespace std;
 
-int main(int argc, char* argv[])
-	{
+int main(int argc, char* argv[]) {
 	/* Argument handling.
 		- Argument 1 must always be a filename. It should be in the 
 		directory the program is in (probably). The filename should not
@@ -46,11 +45,10 @@ int main(int argc, char* argv[])
 	I know jack shit about exceptions and all that. */
 	std::string title = "Title"; // Song name.
 	
-	int arrN = -1;
+	unsigned int arrN = 0;
 	std::string arrTitle = "Arrangement";
 	
-	for(int i = 2; i < argc; i++)
-		{ 
+	for(int i = 2; i < argc; i++) { 
 		// Song title.
 		if(!strcmp(argv[i],"-title")) 
 			{ if(argv[i+1] != NULL) { title = argv[i+1]; } }
@@ -66,35 +64,37 @@ int main(int argc, char* argv[])
 		if(!strcmp(argv[i],"-palmtoggle")) { palmToggle = 1; }
 		// Logic flag.
 		if(!strcmp(argv[i],"-logic")) { midiMode = eMidi::logic; }
-		}
+		if(!strcmp(argv[i],"-rb3")) { midiMode = eMidi::rb3; }
+	}
 	
 	MIDIRead midi(midiName, midiMode);
 	midi.process(arrN);
 	// midi.debug();
 	
 	const std::vector<Track>& tracks = midi.getTracks();
-	
-	for(auto it = tracks.begin(); it != tracks.end(); ++it)
-		{
+	CreateArrangement create(tracks.at(1));
+	create.process();
+	RSXMLWrite rsxml(midiName, title, create.getArrangement());
+	rsxml.processArrangement();
+	/*
+	for(auto it = tracks.begin(); it != tracks.end(); ++it) {
 		if(tracks.size() > 0 && (it - tracks.begin()) == 0) { }
-		else if(it->name == "Vocals" || it->type == vocal)
-			{
+		else if(it->name == "Vocals" || it->type == vocal) {
 			ArrVocal v;
 			if(externalLyrics)
 				{ ArrVocal v((*it), midiName); }
 			else { ArrVocal v((*it)); }
 			RSXMLWrite rsxml(midiName, v);
 			rsxml.processVocals();
-			}
-		else
-			{
+		}
+		else {
 			CreateArrangement create((*it));
 			create.process();
 			RSXMLWrite rsxml(midiName, title, create.getArrangement());
 			rsxml.processArrangement();
-			}
 		}
+	} */
 	
 	return 0;
-	}
+}
 	

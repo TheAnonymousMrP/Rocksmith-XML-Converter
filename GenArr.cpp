@@ -31,25 +31,16 @@ void CreateArrangement::process() {
 	// Beat grid is independent of anything else.
 	createBeatGrid();
 	
+	
 	// First things first, we need to sort out the tuning.
 	getTuning();
 	
-	// Scans the vector containing all notes to identify unique difficulties.
-	bool match = false;
-	for(auto it = vNotes.begin(); it != vNotes.end(); ++it) {
-		match = false;
-		for(auto jt = vNotes.begin(); jt != it; ++jt) {
-			if(it->getDif() == jt->getDif())
-				{ match = true; break; }
-		}
-		if(!match) { difList.push_back(it->getDif()); }
-	}
-	// Sorts the vector into order.
-	sort(difList.begin(),difList.end());
-	
+	vNotes = track.getNotes();
+	for(Note& n : vNotes) { n.setFret(); }
 	/* We need to apply the various techniques that may be applicable to a 
 	note before adding it to the Arrangement. */
-	compileNotes();
+	setTechniques();	
+	
 	
 	/* If anchors are pre-existing, process them now; like notes, they will 
 	be distributed per difficulty later on. If they're not pre-existing,
@@ -61,9 +52,8 @@ void CreateArrangement::process() {
 	/* Now we can create each difficulty. For this, we process the notes (and 
 	identify if they should be chords or not); the anchors (if none exist, we
 	auto-generate them); and the handshapes. */
-	for(int& i : difList)
+	for(unsigned int i = 0; i <= track.getMaxDif(); ++i)
 		{ vDifficulties.push_back(createDifficulty(i)); }
-	arr.setDifficulties(vDifficulties);	
 		
 	/* Sections and Phrases are static across difficulties.
 	As such, they are next at the top of hierarchy below 'Arrangement'. 
@@ -77,6 +67,16 @@ void CreateArrangement::process() {
 	/* Difficulties present an issue insofar as a certain phrase may 'skip' 
 	difficulties; similarly, optimising contents above the maximum difficulty 
 	of a phrase is necessary. */
+	
+	arr.setDifficulties(vDifficulties);	
+	arr.setNotes(vNotes);
+	arr.setChords(vChords);
+	arr.setAnchors(vAnchors);
+	arr.setHands(vHands);
+	arr.setChordTemplates(vChordTemplate);
+	arr.setPhraseTemplates(vPhraseTemplate);
+	arr.setPhrases(vPhrases);
+	arr.setSections(vSections);
 }
 
 // Private methods
@@ -118,16 +118,7 @@ void CreateArrangement::getTuning() {
 	arr.setTuning(t); Note::setTuning(t);
 }
 
-void CreateArrangement::compileNotes() {
-	vNotes = track.getNotes(); 
-	for(Note& n : vNotes) { 
-		n.setFret(); 
-		// Create a normalised difficulty.
-		for(auto it = difList.begin(); it != difList.end(); ++it) {
-			if(n.getDif() == (*it)) 
-				{ n.normalisedDif = (it - difList.begin()); break; }
-		}
-	}
+void CreateArrangement::setTechniques() {
 	vector<Meta> mTech(track.getMetas(eMeta::tech));
 	if(mTech.size() > 0) {
 		float nTime = 0, xTime = 0; eTechnique t = none;
@@ -171,25 +162,24 @@ void CreateArrangement::compileNotes() {
 			}	
 		}
 	}
-	arr.setNotes(vNotes);
 }	
 	
-Difficulty CreateArrangement::createDifficulty(int dif) {
-	Difficulty d; d.setDifficulty();
+Difficulty CreateArrangement::createDifficulty(unsigned int dif) {
+	Difficulty d;
 	// Identifying chords.
-	auto it = vNotes.begin();
-	while(it != vNotes.end()) {
-		if(it->getDif() <= dif) {
-			int chordSize = isChord(vNotes, it, dif);
-			if(chordSize == 1) { d.addNoteI(it - vNotes.begin()); }
-			else { 
-				vChords.push_back(createChord(vNotes, it, chordSize));
-				d.addChordI(vChords.size() - 1); 
-			}
-			it += chordSize;
+	std::vector<Note> notes;
+	for(Note& n : vNotes) { if(n.minDif <= dif) { notes.push_back(n); } }
+	auto it = notes.begin();
+	while(it < notes.end()) {
+		int chordSize = isChord(vNotes, it, dif);			
+		// std::cout << (it - notes.begin()) << " | " << chordSize ENDLINE
+		if(chordSize == 1) { d.addNoteI(it - notes.begin()); }
+		else {
+			vChords.push_back(createChord(notes, it, chordSize));
+			d.addChordI(vChords.size() - 1); 
 		}
-		else { ++it; }
-	}
+		it += chordSize;
+	} 
 	// Generating anchors. 
 	if(anchors) {
 		/* for(const Meta& m : track.getMetas(eMeta::anchor)) {
@@ -203,17 +193,17 @@ Difficulty CreateArrangement::createDifficulty(int dif) {
 }
 
 Chord CreateArrangement::createChord(const std::vector<Note>& nSource, 
-	std::vector<Note>::iterator& it, int chordSize)
+	std::vector<Note>::iterator it, int chordSize)
 	{
 	std::vector<Meta> mChords(track.getMetas(eMeta::chord)); // Chord info.
 	std::vector<Note> notes;
 	std::vector<unsigned int> index;
-	for(it = it; it != it + chordSize && it != vNotes.end(); ++it) {
+	auto jt = it + chordSize;
+	for(it = it; it != jt && it != nSource.end(); ++it) {
 		notes.push_back((*it));
-		index.push_back(it - vNotes.begin());
+		index.push_back(it - nSource.begin());
 	}
 	float time = notes.at(0).getTime();
-	
 	// The Template.
 	ChordTemplate newT(notes);
 	bool match = false; int id = -1;
@@ -226,22 +216,23 @@ Chord CreateArrangement::createChord(const std::vector<Note>& nSource,
 			{ if(m.time == time) { newT.name = m.text; break; } }	
 		newT.setID(); id = newT.getID(); vChordTemplate.push_back(newT); 
 	}
-	
 	// The Chord.
 	Chord c(index, time, id);
 	return c;
 	}
 	
-void CreateArrangement::createAnchors(Difficulty& d, int dif) {
-	int low = 0; bool newAnchor = true;
+void CreateArrangement::createAnchors(Difficulty& d, unsigned int dif) {
+	int low = 1; bool newAnchor = true;
 	for(auto it = vNotes.begin(); it != vNotes.end(); ++it) {
 		int chordSize = isChord(vNotes, it, dif);
 		int fret = it->getFret();
 		if(chordSize > 1) {
-			auto n(getXsWithinRange(vNotes, it, chordSize));	
-			low = Note::findLowestFret(n);
+			auto n(getXsWithinRange(vNotes, it, chordSize));
+			fret = Note::findLowestFret(n, 1);
+			if(fret == low) { newAnchor = false; }
+			else { low = fret; }
 		}
-		else if(fret < low) { low = fret; }
+		else if(fret < low && low > 1) { low = fret; }
 		else if(fret >= low + DEFAULTANCHORWIDTH) { low = fret; }
 		// Bends tend to be on the third finger. Sometimes. I think.
 		// else if(it->isBend() && fret > 2) { low = fret-2; }
@@ -264,30 +255,31 @@ void CreateArrangement::createAnchors(Difficulty& d, int dif) {
 void CreateArrangement::createPhrases() {
 	std::vector<Meta> mPhrase(track.getMetas(eMeta::phrase));
 
-	std::vector<Meta>::iterator it = mPhrase.begin(); ++it;
-	for(Meta& m : mPhrase)
-		{
-		Phrase p(m);
-		if(it == mPhrase.end())
-			{ p.duration = track.duration - m.time; }
-		else { p.duration = it->time - m.time; ++it; }	
-
-		/* By scanning the vector containing all notes within a time frame, 
-		we can derive the maximum difficulty of the contents.
-		And by cross-referencing this with the difficulty list created earlier,
-		we know how many difficulties need to be produced in a given phrase. 
-		
-		This isn't perfect, as it implies there are no difficulty 'jumps', 
-		but for now it'll do. */
-		auto tempI(getIsWithinTime(vNotes, m.time, p.duration));
-		auto tempN(getXsWithinTime(vNotes, m.time, p.duration));
-		int max = findMaxDif(tempN);
-		p.setMaxDif(max);
-		// DANGER ZONE
-		// p.startNoteI = tempI.front(); p.endNoteI = tempI.back();
-		vPhrases.push_back(p);
+	std::vector<Meta>::iterator it = mPhrase.begin() + 1;
+	for(Meta& m : mPhrase) {
+		std::cout << "Phrase time: " << m.time ENDLINE
+		PhraseTemplate newT(m.text);
+		bool match = false; 
+		unsigned int id = 0; unsigned int count = 0;
+		for(PhraseTemplate& oldT : vPhraseTemplate) { 
+			if(newT.name == oldT.name) 
+				{ id = oldT.getID(); count = ++oldT.inc; match = true; break; } 
 		}
-	assignIDs(vPhrases);
+		if(!match) { 
+			/* The maxDif is needed both for the template's field and for
+			optimising the 'printing' of the file. */
+			auto tempN(getXsWithinTime(vNotes, m.time, track.duration));
+			newT.maxDif = findMaxDif(tempN);
+			newT.name = m.text;	
+			newT.setID(); id = newT.getID(); vPhraseTemplate.push_back(newT); 
+		}
+		
+		Phrase p(m, id, count);
+		if(it == mPhrase.end()) { p.duration = track.duration - m.time; }
+		else { p.duration = it->time - m.time; ++it; }	
+		
+		vPhrases.push_back(p);
+	}
 }
 	
 void CreateArrangement::createSections() {
@@ -295,6 +287,7 @@ void CreateArrangement::createSections() {
 	
 	vector<Meta>::iterator it = mSection.begin(); ++it;
 	for(Meta& m : mSection) {
+		std::cout << "Section time: " << m.time ENDLINE
 		Section s(m);
 		if(it == mSection.end())
 			{ s.duration = track.duration - m.time; }
@@ -305,7 +298,6 @@ void CreateArrangement::createSections() {
 		vSections.push_back(s);
 	}
 	assignIDs(vSections);
-	arr.setSections(vSections);
 }
 		
 	

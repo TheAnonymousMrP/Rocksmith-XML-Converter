@@ -23,8 +23,7 @@ struct Beat
 	// TimeSig timeSig;
 	};
 
-class ChordTemplate
-	{
+class ChordTemplate {
 	int id; static int count; 
 	int firstString;
 	int fret[NUMSTRINGS]; 
@@ -52,15 +51,14 @@ class ChordTemplate
 		std::string toString() const {
 			std::string s = "";
 			for(int i = 0; i < NUMSTRINGS; ++i) {
-				unsigned char c = fret[i]; s += c; 
-				c = finger[i]; s += c;
+				s += std::to_string(fret[i]); s += std::to_string(finger[i]);
 			}
 			return s;
 		}
 		
 		void reset() { count = 0; };
 		
-	};
+};
 
 int ChordTemplate::count = 0;
 	
@@ -71,7 +69,8 @@ ChordTemplate::ChordTemplate(std::string n, std::string d) {
 }
 	
 ChordTemplate::ChordTemplate(const std::vector<Note>& notes, 
-	std::string n, std::string d) {
+	std::string n, std::string d) 
+	{
 	name = n; display = d;
 	for(int i = 0; i < NUMSTRINGS; ++i)
 		{ fret[i] = -1; finger[i] = -1; }
@@ -90,6 +89,26 @@ ChordTemplate::ChordTemplate(const ChordTemplate& c) {
 	for(int i = 0; i < NUMSTRINGS; i++)
 		{ fret[i] = c.fret[i]; finger[i] = c.finger[i]; }
 }	
+
+class PhraseTemplate {
+	unsigned int id; static unsigned int count;
+	
+	public:
+		PhraseTemplate(std::string n = "") { 
+			name = n; inc = 0; 
+			disparity = false; ignore = false; solo = false; 
+		};
+		
+		std::string name;
+		int maxDif; unsigned int inc;
+		bool disparity, ignore, solo;
+		
+		const unsigned int& getID() const { return id; };
+		
+		void setID() { id = count; count++; }
+};
+
+unsigned int PhraseTemplate::count = 0;
 	
 class Arrangement {
 	// Private
@@ -97,7 +116,10 @@ class Arrangement {
 	float duration;
 	eTuning tuning;
 	std::vector<Beat> beats;
+	std::vector<ChordTemplate> chords;
+	std::vector<PhraseTemplate> phrases;
 	std::vector<Section> sections;
+	std::vector<Phrase> vPhrases;
 	std::vector<Difficulty> difficulties;
 	std::vector<Note> vNotes;
 	std::vector<Chord> vChords;
@@ -109,9 +131,11 @@ class Arrangement {
 			{ };
 		Arrangement(const Track& t) { name = t.name; duration = t.duration; };
 		Arrangement(const Arrangement& a) : 
-			beats(a.beats), sections(a.sections), difficulties(a.difficulties),
-			vNotes(a.vNotes), vChords(a.vChords), vAnchors(a.vAnchors), 
-			vHands(a.vHands) { name = a.name; duration = a.duration; };
+			beats(a.beats), chords(a.chords), phrases(a.phrases),
+			sections(a.sections), vPhrases(a.vPhrases), 
+			difficulties(a.difficulties), vNotes(a.vNotes), 
+			vChords(a.vChords), vAnchors(a.vAnchors), vHands(a.vHands) 
+			{ name = a.name; duration = a.duration; };
 		// Arrangement operator=(const Arrangement& a); // Assignment operator.
 		~Arrangement() { };
 		
@@ -130,7 +154,19 @@ class Arrangement {
 		const float& getDuration() const { return duration; };
 		const eTuning& getTuning() const { return tuning; };
 		
+		const std::vector<ChordTemplate>& getChordTemplates() const
+			{ return chords; };
+		const std::vector<PhraseTemplate>& getPhraseTemplates() const
+			{ return phrases; };
 		const std::vector<Section>& getSections() const { return sections; };
+		/* const std::vector<Phrase> getPhrases() const {
+			std::vector<Phrase> pList;
+			for(const Section& s : sections) {
+				for(const Phrase& p : s.getPhrases()) { pList.push_back(p); }
+			}
+			return pList;
+		}; */
+		const std::vector<Phrase>& getPhrases() const { return vPhrases; };
 		const std::vector<Difficulty>& getDifficulties() const 
 			{ return difficulties; };
 		const int getNumDifficulties() const 
@@ -148,8 +184,11 @@ class Arrangement {
 			{ return beats; };
 		
 		void setBeats(std::vector<Beat> b) { beats = b; };
-		
+		void setChordTemplates(std::vector<ChordTemplate> t) { chords = t; };
+		void setPhraseTemplates(std::vector<PhraseTemplate> t) 
+			{ phrases = t; };
 		void setSections(std::vector<Section> s) { sections = s; };
+		void setPhrases(std::vector<Phrase> p) { vPhrases = p; };
 		void setDifficulties(std::vector<Difficulty> d) 
 			{ difficulties = d; };
 		

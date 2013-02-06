@@ -62,75 +62,37 @@ const std::vector<X> getXsFromIsWithinTime(std::vector<X> xSource,
 	
 // Class declarations	
 class Phrase {
-	int id; static int count;
+	unsigned int id; unsigned int variation;
 	std::string name;
 	float time;
 	int startBeat, endBeat;
 	
-	int maxDif;
-	bool disparity, solo, ignore;
-	
 	public:
 		Phrase();
-		Phrase(const Phrase& p); // Copy constructor
-		Phrase(Meta m);
-		~Phrase() { };
+		Phrase(Meta m, unsigned int i = 0, unsigned int c = 0);
 		
 		float duration;
 		int startNoteI, endNoteI;
 		
-		const int getID() const { return id; };
-		std::string getName() { return name; };
-		float getTime() { return time; };
-		int getMaxDif() { return maxDif; };
-		bool getDisparity() { return disparity; };
-		bool getSolo() { return solo; };
-		bool getIgnore() { return ignore; };
-		
-		void setID() { id = count; ++count; }
-		void setID(int i) { id = i; } 
-		void setMaxDif(int i) { maxDif = i; };
-		
-		void reset() { count = 0; }; // Resets count for new arrangement.
+		const unsigned int& getID() const { return id; };
+		const std::string& getName() const { return name; };
+		const float& getTime() const { return time; };
+		const unsigned int& getVariation() const { return variation; };
 };
 	
-int Phrase::count = 0;
-	
-Phrase::Phrase()
-	{ 
+Phrase::Phrase() { 
 	name = "";
 	time = 0;
 	duration = 0;
+}	
 	
-	disparity = 0;
-	solo = 0;
-	ignore = 0;
-	}	
-	
-Phrase::Phrase(const Phrase& p)
-	{
-	id = p.id;
-	name = p.name;
-	time = p.time;
-	duration = p.duration;
-	maxDif = p.maxDif;
-	disparity = p.disparity;
-	solo = p.solo; 
-	ignore = p.ignore;
-	
-	// std::vector<Difficulty> contents(p.contents);
-	}
-	
-Phrase::Phrase(Meta m)
-	{
+Phrase::Phrase(Meta m, unsigned int i, unsigned int c) {
+	id = i;
 	name = m.text;
 	time = m.time;
 	duration = 0;
-	
-	disparity = 0;
-	solo = 0;
-	ignore = 0;
-	}
+	variation = c;
+}
 
 class Section {
 	std::string name;

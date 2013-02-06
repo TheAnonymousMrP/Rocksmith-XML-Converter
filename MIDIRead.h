@@ -17,6 +17,7 @@
 enum eMidi {
 	normal,
 	logic,
+	rb3,
 };
 
 class MIDIRead {
@@ -27,7 +28,7 @@ class MIDIRead {
 	unsigned char* memblock; // unsigned for the later hex comparisons.
 	float timer; float currentTempo; float endTime;
 	int tempoCount; int division;
-	std::vector<Tempo>::const_iterator tCount;
+	std::vector<Tempo>::const_iterator tCount, tEnd;
 	
 	// Process methods
 	int getMIDI(std::string midiName); // Copies file to char array.
@@ -45,7 +46,7 @@ class MIDIRead {
 	
 	// Mark 2
 	int processDelta(const unsigned int& beginPoint);
-	void processContent(unsigned int& it, const float& timer);
+	unsigned int processContent(unsigned int it, const float& timer);
 	// Converters and stuff
 	int convertBytes2VLQ2(const std::vector<unsigned char>& vlq);
 	float getCurrentTempo(float tempo, 
@@ -75,4 +76,5 @@ MIDIRead::MIDIRead(std::string s, eMidi m) {
 	else { midiMode = eMidi::normal; }
 	currentTempo = DEFAULTTEMPO;
 	timer = DEFAULTOFFSET; 
+	tempoCount = 0;
 }

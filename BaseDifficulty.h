@@ -36,37 +36,36 @@ const std::vector<X> getXsFromIs(const std::vector<X>& xSource,
 	return x;
 	}
 	
+	
 template <class X>
 const std::vector<X> getXsWithinRange(const std::vector<X>& xSource, 
 	typename std::vector<X>::iterator it, const int range)
 	{
 	std::vector<X> x;
-	for(it = it; it != it + range && it != xSource.end(); ++it)
+	auto end = it + range;
+	for(it = it; it != end && it != xSource.end(); ++it)
 		{ x.push_back((*it)); }
 	return x;
 	}
 	
 int isChord(const std::vector<Note>& nSource, 
-	std::vector<Note>::iterator it, int dif) 
+	std::vector<Note>::iterator it, unsigned int dif) 
 	{
-	// Recursive. Returns number of notes if a chord, 1 otherwise.
+	// Recursive. Returns number of notes; 1 if no notes, etc.
 	// Known bug. See 'top' file.
-	float time = it->getTime(); int minDif = it->getDif(); ++it;
-	if(it != nSource.end() && time == it->getTime() && minDif <= dif) 
-//		&& it->getDif() <= dif) { return isChord(nSource, it, dif); }
-		{ 
-		int i = isChord(nSource, it, dif);
-		if(it->getDif() <= dif) { return i; }
-		else if(i > 0) { return i; }
-		}
-	return 1;
+	float time = it->getTime(); ++it;
+	int r = 1; 
+	if(it != nSource.end() && time == it->getTime()) { 
+		r += isChord(nSource, it, dif);   
 	}
+	return r;
+}
 	
 template <class T>
 int findMaxDif(const std::vector<T>& source) {
 	int max = 0, a = 0;
 	for(auto it = source.begin(); it != source.end(); ++it)
-		{ a = it->normalisedDif; if(max < a) { max = a; } }
+		{ a = it->minDif; if(max < a) { max = a; } }
 	return max;
 }
 
@@ -87,10 +86,13 @@ class Chord {
 	std::vector<unsigned int> vNotesI;
 	
 	public:
-		Chord(float t = -1.0, int i = -1) { time = t; id = i; };
 		Chord(const std::vector<unsigned int>& iSource, float t = -1.0, 
-			int i = -1) : vNotesI(iSource)
-			{ time = t; id = i; };
+			int i = -1) : vNotesI(iSource) { 
+			time = t; id = i; 
+			accent = false; fretHandMute = false; 
+			highDensity = false; ignore = false; linkNext = false; 
+			palmMute = false, strum = false;
+		};
 		Chord(const Chord& c) : vNotesI(c.vNotesI) { 
 			time = c.time; id = c.id;
 			linkNext = c.linkNext; accent = c.accent;
@@ -137,7 +139,7 @@ struct HandShape
 	
 class Difficulty {
 	// Private
-	int difficulty; static int count; 
+	static int count; 
 	
 	/*
 	std::vector<Note> notes;
@@ -158,11 +160,7 @@ class Difficulty {
 		Difficulty(const Difficulty& d) :
 			notesI(d.notesI), chordsI(d.chordsI),
 			anchorsI(d.anchorsI), handsI(d.handsI)
-			{ difficulty = d.difficulty; };
-		/* Difficulty operator=(const Difficulty& d)
-			{
-			difficulty = d.difficulty;
-			} */
+			{ };
 		~Difficulty() { };
 		
 		void addNoteI(unsigned int i) { notesI.push_back(i); };
@@ -178,17 +176,6 @@ class Difficulty {
 			{ addXs(sI, anchorsI); };
 		void addHandsI(std::vector<unsigned int> sI) 
 			{ addXs(sI, handsI); };
-		
-		const int& getDifficulty() const { return difficulty; };
-		
-		/* std::vector<Note> getNotes(std::vector<Note> sX) const
-			{ return getXsFromIs(sX, notesPointer); };
-		std::vector<Chord> getChords(std::vector<Chord> sX) const
-			{ return getXsFromIs(sX, chordsPointer); };
-		std::vector<Anchor> getAnchors(std::vector<Anchor> sX) const
-			{ return getXsFromIs(sX, anchorsPointer); };
-		std::vector<HandShape> getHands(std::vector<HandShape> sX) const
-			{ return getXsFromIs(sX, handsPointer); }; */
 			
 		const std::vector<unsigned int>& getNotesI() const 
 			{ return notesI; };
@@ -203,12 +190,6 @@ class Difficulty {
 		int getChordsSize() const { return chordsI.size(); };
 		int getAnchorsSize() const { return anchorsI.size(); };
 		int getHandsSize() const { return handsI.size(); };
-		
-		void setDifficulty() { difficulty = count; ++count; };
-		
-		void reset() { count = 0; }
 };
-
-int Difficulty::count = 0;
 
 #endif

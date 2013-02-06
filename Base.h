@@ -8,6 +8,7 @@
 #include <vector>
 
 #define NUMSTRINGS 6
+#define NUMFRETS 24
 
 #define ONEMINUTE 60.000
 #define ONEMINUTEMILLI 60000
@@ -114,7 +115,6 @@ class Note : public BaseNote {
 	// Private
 	int string;
 	int fret;
-	int minDif; 
 	// int maxDif;
 	
 	// Techniques
@@ -128,7 +128,7 @@ class Note : public BaseNote {
 		// Note(const Note& n); // Copy Constructor
 		~Note() { };
 		
-		int normalisedDif;
+		unsigned int minDif;
 		
 		// Techniques
 		bool accent, fretHandMute, hammerOn, harmonic, palmMute, 
@@ -138,7 +138,6 @@ class Note : public BaseNote {
 		
 		const int& getString() const { return string; };
 		const int& getFret() const { return fret; };
-		const int& getDif() const { return minDif; };
 		// Techniques
 		const bool isBend() const { return (bendStep > 0)? true: false; };
 		 
@@ -175,9 +174,12 @@ class Note : public BaseNote {
 		};
 		
 		static void setTuning(eTuning t) { tuning = t; }
-		static int findLowestFret(const std::vector<Note>& source) {
-			int low = 0;
-			for(const Note& n : source) { (n.fret < low)? low = n.fret: low; }
+		static int findLowestFret(const std::vector<Note>& source, 
+			const int& min = 0) 
+			{
+			int low = NUMFRETS;
+			for(const Note& n : source) 
+				{ (n.fret < low && n.fret >= min)? low = n.fret: low; }
 			return low;
 		}
 		
@@ -194,7 +196,6 @@ Note::Note(float t, int s, int p, int d) {
 	pitch = p;
 	fret = -1;
 	minDif = d;
-	normalisedDif = -1;
 	
 	techDif = -1;
 	accent = false; fretHandMute = false; hammerOn = false; harmonic = false;

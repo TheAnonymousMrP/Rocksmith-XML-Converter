@@ -26,7 +26,7 @@ class RSXMLWrite
 	
 	void writeStructure();
 	
-	void writeDifficulty(const Difficulty& d, bool trans = false);
+	void writeDifficulty(const Difficulty& d, int dif = 0, bool trans = false);
 	
 	void writeNote(const Note& n, bool trans = false, bool chord = false);
 	void writeChord(const Chord& c, bool trans = false);
