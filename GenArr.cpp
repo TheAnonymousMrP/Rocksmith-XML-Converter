@@ -31,16 +31,14 @@ void CreateArrangement::process() {
 	// Beat grid is independent of anything else.
 	createBeatGrid();
 	
-	
 	// First things first, we need to sort out the tuning.
 	getTuning();
-	
+
 	vNotes = track.getNotes();
 	for(Note& n : vNotes) { n.setFret(); }
 	/* We need to apply the various techniques that may be applicable to a 
 	note before adding it to the Arrangement. */
-	setTechniques();	
-	
+	setTechniques();
 	
 	/* If anchors are pre-existing, process them now; like notes, they will 
 	be distributed per difficulty later on. If they're not pre-existing,
@@ -54,7 +52,7 @@ void CreateArrangement::process() {
 	auto-generate them); and the handshapes. */
 	for(unsigned int i = 0; i <= track.getMaxDif(); ++i)
 		{ vDifficulties.push_back(createDifficulty(i)); }
-		
+
 	/* Sections and Phrases are static across difficulties.
 	As such, they are next at the top of hierarchy below 'Arrangement'. 
 	While both sections and phrases may repeat in a song, phrases are 
@@ -67,7 +65,7 @@ void CreateArrangement::process() {
 	/* Difficulties present an issue insofar as a certain phrase may 'skip' 
 	difficulties; similarly, optimising contents above the maximum difficulty 
 	of a phrase is necessary. */
-	
+
 	arr.setDifficulties(vDifficulties);	
 	arr.setNotes(vNotes);
 	arr.setChords(vChords);
@@ -81,26 +79,30 @@ void CreateArrangement::process() {
 
 // Private methods
 void CreateArrangement::createBeatGrid(){
-	std::vector<Tempo> vT(track.getTempos());
+	auto vT(track.getTempos());
 	int beat = 0; // Beat counter.
 	int bar = 0; // Bar counter.
-
-	auto jt = vT.begin(); ++jt;
-	for(auto it = vT.begin(); it != vT.end(); ++it, ++jt) {
-		timer = it->time;
-		while(timer < jt->time)
-			{
-			Beat b;
-			b.time = timer;
-			b.tempo = it->tempo;
-			if(beat % DEFAULTTIMESIGNUM == 0)
-				{ b.bar = bar; ++bar; }
-			else { b.bar = -1; }
-			vBeats.push_back(b);
-			
-			timer += convertTempo2Beat(it->tempo);
-			++beat;
-			}
+	auto tCount = vT.begin();
+	float timer = tCount->time;
+	while( timer < arr.getDuration() ) {
+		/* Debug corner!
+		std::cout << "tCount: " << (tCount - vT.begin()) 
+		<< " tEnd: " << vT.end() - vT.begin() << " Timer: " 
+		<< timer << " | Duration: " << arr.getDuration()
+		<< " | Bar: " << bar << " | Tempo: " << tCount->tempo ENDLINE */
+		if( tCount != (vT.end() - 1) && timer >= (tCount + 1)->time ) 
+			{ ++tCount; } 
+		
+		Beat b;
+		b.time = timer;
+		b.tempo = tCount->tempo;
+		if(beat % DEFAULTTIMESIGNUM == 0)
+			{ b.bar = bar; ++bar; beat = 0; }
+		else { b.bar = -1; }
+		vBeats.push_back(b);
+		
+		timer += convertTempo2Beat(tCount->tempo);
+		++beat;
 	}
 	arr.setBeats(vBeats);
 }
@@ -119,7 +121,7 @@ void CreateArrangement::getTuning() {
 }
 
 void CreateArrangement::setTechniques() {
-	vector<Meta> mTech(track.getMetas(eMeta::tech));
+	auto mTech(track.getMetas(eMeta::tech));
 	if(mTech.size() > 0) {
 		float nTime = 0, xTime = 0; eTechnique t = none;
 		/* As there will always be less techniques than notes, we will iterate
@@ -257,7 +259,7 @@ void CreateArrangement::createPhrases() {
 
 	std::vector<Meta>::iterator it = mPhrase.begin() + 1;
 	for(Meta& m : mPhrase) {
-		std::cout << "Phrase time: " << m.time ENDLINE
+		// std::cout << "Phrase time: " << m.time ENDLINE
 		PhraseTemplate newT(m.text);
 		bool match = false; 
 		unsigned int id = 0; unsigned int count = 0;
@@ -265,29 +267,36 @@ void CreateArrangement::createPhrases() {
 			if(newT.name == oldT.name) 
 				{ id = oldT.getID(); count = ++oldT.inc; match = true; break; } 
 		}
-		if(!match) { 
-			/* The maxDif is needed both for the template's field and for
+		/* The maxDif is needed both for the template's field and for
 			optimising the 'printing' of the file. */
-			auto tempN(getXsWithinTime(vNotes, m.time, track.duration));
-			newT.maxDif = findMaxDif(tempN);
+		float duration = 0.0;
+		if(it == mPhrase.end()) { duration = track.duration - m.time; }
+		else { duration = it->time - m.time; ++it; }
+				
+		auto tempN(getXsWithinTime(vNotes, m.time, duration));
+		unsigned int tempDif = findMaxDif(tempN);
+		
+		// Add 'new' phrases to the template list.
+		if(!match) { 
+			newT.maxDif = tempDif;
 			newT.name = m.text;	
 			newT.setID(); id = newT.getID(); vPhraseTemplate.push_back(newT); 
 		}
 		
 		Phrase p(m, id, count);
-		if(it == mPhrase.end()) { p.duration = track.duration - m.time; }
-		else { p.duration = it->time - m.time; ++it; }	
+		p.duration = duration;
+		p.maxDif = tempDif;
 		
 		vPhrases.push_back(p);
 	}
 }
 	
 void CreateArrangement::createSections() {
-	vector<Meta> mSection(track.getMetas(eMeta::marker));
+	std::vector<Meta> mSection(track.getMetas(eMeta::marker));
 	
-	vector<Meta>::iterator it = mSection.begin(); ++it;
+	std::vector<Meta>::iterator it = mSection.begin(); ++it;
 	for(Meta& m : mSection) {
-		std::cout << "Section time: " << m.time ENDLINE
+		// std::cout << "Section time: " << m.time ENDLINE
 		Section s(m);
 		if(it == mSection.end())
 			{ s.duration = track.duration - m.time; }

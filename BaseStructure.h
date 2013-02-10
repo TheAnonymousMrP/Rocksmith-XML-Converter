@@ -21,58 +21,48 @@ std::vector<T> getXsWithinTime(std::vector<T> source, float a, float b)
 	}
 
 template <class T>
-const std::vector<int> getIsWithinTime(std::vector<T> source, 
+const std::vector<unsigned int> getIsWithinTime(std::vector<T> source, 
 	float a, float b)
 	{
-	std::vector<int> i;
+	std::vector<unsigned int> i;
 	float t = 0.0;
-	for(auto it = source.begin(); it != source.end(); ++it)
-		{
+	for(auto it = source.begin(); it != source.end(); ++it) {
 		t = it->getTime();
-		if(t > b) { break; }
-		if(t >= a) { i.push_back(it - source.begin()); }
-		}
-	return i;
+		if( t > b ) { break; }
+		if( t >= a ) { i.push_back( it - source.begin() ); }
 	}
+	return i;
+}
 	
 template <class X>
 const std::vector<X> getXsFromIsWithinTime(std::vector<X> xSource, 
-	std::vector<int> iSource, float a, float b)
+	std::vector<unsigned int> iSource, float a, float b)
 	{
-	GOTHERE
 	std::vector<X> x;
-	float t = 0.0;
-	for(auto it = iSource.begin(); it != iSource.end(); ++it)
-		{ 
-		int cI(*it);
-		if(xSource.size() > cI)
-			{
-			GOTHERE
-			X cX(xSource.at(cI));
-			t = cX.getTime();
-			if(t > b) { break; }
-			if(xSource.size() > cI)
-				{ x.push_back(xSource.at(cX)); }
-			}
-		else { break; }
-		}
-	GOTHERE
-	return x;
+	for(auto& i : iSource) { 
+		if( xSource.size() > i ) {
+			if( xSource.at( i ).getTime() > b ) { break; }
+			if( xSource.at( i ).getTime() >= a )
+				{ x.push_back( xSource.at( i ) ); }
+		} else { break; }
 	}
+	return x;
+}
 	
 // Class declarations	
 class Phrase {
 	unsigned int id; unsigned int variation;
 	std::string name;
 	float time;
-	int startBeat, endBeat;
 	
 	public:
 		Phrase();
 		Phrase(Meta m, unsigned int i = 0, unsigned int c = 0);
 		
 		float duration;
-		int startNoteI, endNoteI;
+		unsigned int startNoteI, endNoteI;
+		unsigned int startBeat, endBeat;
+		unsigned int maxDif;
 		
 		const unsigned int& getID() const { return id; };
 		const std::string& getName() const { return name; };

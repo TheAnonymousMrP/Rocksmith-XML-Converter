@@ -44,7 +44,6 @@ class CreateArrangement {
 			if(t.getMetas(eMeta::anchor).size() > 0) { anchors = true; }
 			else { anchors = false; }
 		};
-		~CreateArrangement() { };
 		
 		void process();
 		

@@ -53,11 +53,11 @@ int main(int argc, char* argv[]) {
 		if(!strcmp(argv[i],"-title")) 
 			{ if(argv[i+1] != NULL) { title = argv[i+1]; } }
 		// Number of arrangements.
-		/* if(!strcmp(argv[i],"-arr"))
+		if(!strcmp(argv[i],"-arr"))
 			{ 
 			if(argv[i+1] != NULL) 
 				{ std::string arrS = argv[i+1]; arrN = atoi(arrS.c_str()); } 
-			} */
+			}
 		// External Lyrics flag.
 		if(!strcmp(argv[i],"-extlyrics")) { externalLyrics = 1; }
 		// Palm-mute Toggle flag.
@@ -72,11 +72,7 @@ int main(int argc, char* argv[]) {
 	// midi.debug();
 	
 	const std::vector<Track>& tracks = midi.getTracks();
-	CreateArrangement create(tracks.at(1));
-	create.process();
-	RSXMLWrite rsxml(midiName, title, create.getArrangement());
-	rsxml.processArrangement();
-	/*
+
 	for(auto it = tracks.begin(); it != tracks.end(); ++it) {
 		if(tracks.size() > 0 && (it - tracks.begin()) == 0) { }
 		else if(it->name == "Vocals" || it->type == vocal) {
@@ -93,7 +89,7 @@ int main(int argc, char* argv[]) {
 			RSXMLWrite rsxml(midiName, title, create.getArrangement());
 			rsxml.processArrangement();
 		}
-	} */
+	} 
 	
 	return 0;
 }

@@ -9,7 +9,7 @@
 
 // Methods
 template <class X>
-void addIs(std::vector<X> source, std::vector<int>& dest)
+void addIs(std::vector<X> source, std::vector<unsigned int>& dest)
 	{
 	for(typename std::vector<X>::iterator it = source.begin();
 		it != source.end(); ++it)
@@ -35,8 +35,7 @@ const std::vector<X> getXsFromIs(const std::vector<X>& xSource,
 	}
 	return x;
 	}
-	
-	
+		
 template <class X>
 const std::vector<X> getXsWithinRange(const std::vector<X>& xSource, 
 	typename std::vector<X>::iterator it, const int range)
@@ -62,20 +61,21 @@ int isChord(const std::vector<Note>& nSource,
 }
 	
 template <class T>
-int findMaxDif(const std::vector<T>& source) {
-	int max = 0, a = 0;
+unsigned int findMaxDif(const std::vector<T>& source) {
+	unsigned int max = 0, a = 0;
 	for(auto it = source.begin(); it != source.end(); ++it)
 		{ a = it->minDif; if(max < a) { max = a; } }
 	return max;
 }
 
 // Class declarations
-struct Anchor
-	{
+struct Anchor {
 	float time;
 	int fret;
 	float width;
-	};
+	
+	const float& getTime() const { return time; };
+};
 
 class Chord {
 	// Private
@@ -130,12 +130,13 @@ class Chord {
 		void setStrum(bool s) { strum = s; };
 };
 	
-struct HandShape
-	{
+struct HandShape {
 	float time;
 	float duration;
 	int id;	
-	};	
+	
+	const float& getTime() const { return time; };
+};	
 	
 class Difficulty {
 	// Private

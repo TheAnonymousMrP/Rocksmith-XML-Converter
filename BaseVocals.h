@@ -34,11 +34,9 @@ class ArrVocal
 	
 	};
 	
-ArrVocal::ArrVocal(const Track& t)
-	{
-	eMeta l = lyrics; // We don't want confusion over the meaning of 'lyrics'.
+ArrVocal::ArrVocal(const Track& t) {
 	getNotes(t);
-	vText = t.getMetas(l);
+	vText = t.getMetas(eMeta::lyrics);
 	
 	std::vector<Meta>::iterator lastSuccess = vText.begin();
 	for(Lyric& l : vLyrics)
@@ -55,12 +53,12 @@ ArrVocal::ArrVocal(const Track& t)
 	I don't believe having blank lyrics is fatal, but it should probably be 
 	avoided anyway. */
 	int offset = vLyrics.size() - vText.size();
-	if(offset != 0)
-		{ cout << "Vocal mismatch. Offset of: " << offset << " notes.\n"; }
-	}	
+	if(offset != 0) { 
+		std::cout << "Vocal mismatch. Offset of: " << offset << " notes.\n"; 
+	}
+}	
 	
-ArrVocal::ArrVocal(const Track& t, std::string fileName)
-	{ 
+ArrVocal::ArrVocal(const Track& t, std::string fileName) { 
 	ext = true;
 	getNotes(t);
 	getExternalLyrics(fileName);
@@ -81,9 +79,11 @@ ArrVocal::ArrVocal(const Track& t, std::string fileName)
 	I don't believe having blank lyrics is fatal, but it should probably be 
 	avoided anyway. */
 	int offset = vLyrics.size() - vText.size();
-	if(offset != 0)
-		{ cout << "Vocal mismatch. Offset of: " << offset << " notes.\n"; }
+	if(offset != 0) { 
+		std::cout << "Vocal mismatch. Offset of: " << offset 
+		<< " notes.\n"; 
 	}
+}
 
 ArrVocal::ArrVocal(const ArrVocal& v)
 	{
@@ -106,14 +106,14 @@ void ArrVocal::getNotes(Track t)
 void ArrVocal::getExternalLyrics(std::string fileName)
 	{
 	fileName += ".txt";
-	cout << "External lyrics from '" << fileName << "'. \n";
-	ifstream extlyrics;
+	std::cout << "External lyrics from '" << fileName << "'. \n";
+	std::ifstream extlyrics;
 	extlyrics.open(fileName.c_str());
 	if(extlyrics.is_open())
 		{
-		string line;
-		string buf; // Have a buffer string
-		stringstream ss;
+		std::string line;
+		std::string buf; // Have a buffer string
+		std::stringstream ss;
 		
 		while(extlyrics.good())
 			{

@@ -26,6 +26,7 @@ class Track {
 	std::vector<Meta> mAnchor; // This holds anchor-related data.
 	std::vector<Meta> mBend; // This holds Pitch Bend-derived data.
 	std::vector<Meta> mChord; // This holds chord names.
+	std::vector<Meta> mEvent;
 	std::vector<Meta> mMarker; // This hold markers, used for sections.
 	std::vector<Meta> mPhrase; // This holds event data for phrases.
 	std::vector<Meta> mTech; // This holds all technique-related meta-events.
@@ -41,9 +42,9 @@ class Track {
 			{ name = n; duration = d; type = t; };
 		Track(const Track& t) : notes(t.notes), noteOn(t.noteOn), 
 			noteOff(t.noteOff), mAnchor(t.mAnchor), mBend(t.mBend),
-			mChord(t.mChord), mMarker(t.mMarker), mPhrase(t.mPhrase),
-			mTech(t.mTech), mLyrics(t.mLyrics), mSpecial(t.mSpecial),
-			mTempo(t.mTempo), mTimeSig(t.mTimeSig) { 
+			mChord(t.mChord), mEvent(t.mEvent), mMarker(t.mMarker), 
+			mPhrase(t.mPhrase), mTech(t.mTech), mLyrics(t.mLyrics), 
+			mSpecial(t.mSpecial), mTempo(t.mTempo), mTimeSig(t.mTimeSig) { 
 			name = t.name; duration = t.duration; type = t.type; 
 			maxDif = t.maxDif; 
 		};
@@ -58,6 +59,12 @@ class Track {
 		void addMeta(eMeta i, Meta m);
 		void addTempo(float time, float tempo);
 		void addTimeSig(TimeSig t);
+		
+		// Debug
+		const int getNumNotesOn() const { return noteOn.size(); };
+		const int getNumNotesOff() const { return noteOff.size(); };
+		const std::vector<Note>& getNotesOn() const { return noteOn; };
+		const std::vector<Note>& getNotesOff() const { return noteOn; };
 		
 		// Note getNote(int i);
 		const unsigned int& getMaxDif() const { return maxDif; };
@@ -91,20 +98,19 @@ class Track {
 // Add methods
 void Track::addNoteOn(Note n) { noteOn.push_back(n); }
 void Track::addNoteOff(Note n) { noteOff.push_back(n); }
-void Track::addMeta(eMeta i, Meta m)
-	{ 
-	switch(i)
-		{
+void Track::addMeta(eMeta i, Meta m) { 
+	switch(i) {
 		case anchor: mAnchor.push_back(m); break;
 		case bend: mBend.push_back(m); break;
 		case chord: mChord.push_back(m); break;
+		case event: mEvent.push_back(m); break;
 		case lyrics: mLyrics.push_back(m); break;
 		case marker: mMarker.push_back(m); break;
 		case phrase: mPhrase.push_back(m); break;
 		case tech: mTech.push_back(m); break;
 		case special: mSpecial.push_back(m); break;
-		}
 	}
+}
 void Track::addTempo(float time, float tempo) { 
 	Tempo t;
 	t.time = time;
@@ -136,6 +142,7 @@ int Track::getMetaSize(eMeta m) const {
 		case anchor: return mAnchor.size(); break;
 		case bend: return mBend.size(); break;
 		case chord: return mChord.size(); break;
+		case event: return mEvent.size(); break;
 		case lyrics: return mLyrics.size(); break;
 		case marker: return mMarker.size(); break;
 		case phrase: return mPhrase.size(); break;
@@ -149,6 +156,7 @@ const std::vector<Meta>& Track::getMetas(eMeta m) const {
 		case anchor: return mAnchor; break;
 		case bend: return mBend; break;
 		case chord: return mChord; break;
+		case event: return mEvent; break;
 		case lyrics: return mLyrics; break;
 		case marker: return mMarker; break;
 		case phrase: return mPhrase; break;
@@ -166,6 +174,7 @@ void Track::setMetas(std::vector<Meta> metas, eMeta m) {
 		case anchor: mAnchor = metas; break;
 		case bend: mBend = metas; break;
 		case chord: mChord = metas; break;
+		case event: mEvent = metas; break;
 		case lyrics: mLyrics = metas; break;
 		case marker: mMarker = metas; break;
 		case phrase: mPhrase = metas; break;
@@ -176,10 +185,8 @@ void Track::setMetas(std::vector<Meta> metas, eMeta m) {
 }
 
 // Miscellaneous methods
-void Track::sortNotes() 
-	{
+void Track::sortNotes() {
 	if(noteOn.size() == noteOff.size()) {
-		
 		auto jt = noteOff.begin();
 		for(auto it = noteOn.begin(); it != noteOn.end(); ++it, ++jt) {
 			/*if(it->getTime() == jt->getTime() 
@@ -190,7 +197,9 @@ void Track::sortNotes()
 			}
 		}
 	}
+	normaliseDifs();
 }
+
 void Track::normaliseDifs() {
 	std::vector<unsigned int> difs;
 	bool match = false;

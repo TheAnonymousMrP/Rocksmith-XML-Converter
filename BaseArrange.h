@@ -100,7 +100,7 @@ class PhraseTemplate {
 		};
 		
 		std::string name;
-		int maxDif; unsigned int inc;
+		unsigned int maxDif; unsigned int inc;
 		bool disparity, ignore, solo;
 		
 		const unsigned int& getID() const { return id; };

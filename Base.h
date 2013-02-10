@@ -1,9 +1,6 @@
 #ifndef _BASE_
 #define _BASE_
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -23,6 +20,7 @@ enum eMeta {
 	anchor,
 	bend,
 	chord,
+	event,
 	lyrics,
 	marker,
 	phrase,
@@ -51,12 +49,11 @@ enum eTechnique {
 	slap, pluck,
 };
 	
-enum eTuning
-	{
+enum eTuning {
 	standardE,
 	dropD,
 	standardD,
-	};
+};
 
 namespace tuning {
 	const int standardE[NUMSTRINGS] = { 52, 57, 62, 67, 71, 76 }; 
