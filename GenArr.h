@@ -31,10 +31,12 @@ class CreateArrangement {
 	void createBeatGrid();
 	void getTuning();
 	void setTechniques();
-	Difficulty createDifficulty(unsigned int i);
+	void createAnchors();
+	Difficulty createDifficulty(unsigned int i, std::ostream& file);
 		Chord createChord(const std::vector<Note>& nSource, 
 			std::vector<Note>::iterator it, int chordSize);
-		void createAnchors(Difficulty& d, unsigned int dif);
+		Chord createChord2( const std::vector<Note>& notes, 
+			const std::vector<unsigned int>& indexes );
 
 	void createPhrases();
 	void createSections();

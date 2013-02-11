@@ -46,13 +46,16 @@ void CreateArrangement::process() {
 	if(anchors) {
 	
 	}
+	createAnchors();
 	
 	/* Now we can create each difficulty. For this, we process the notes (and 
 	identify if they should be chords or not); the anchors (if none exist, we
 	auto-generate them); and the handshapes. */
+	std::ofstream file;
+	file.open("Test/debug.txt"); // This is the file we're writing to.
 	for(unsigned int i = 0; i <= track.getMaxDif(); ++i)
-		{ vDifficulties.push_back(createDifficulty(i)); }
-
+		{ vDifficulties.push_back(createDifficulty(i,file)); }
+	file.close();
 	/* Sections and Phrases are static across difficulties.
 	As such, they are next at the top of hierarchy below 'Arrangement'. 
 	While both sections and phrases may repeat in a song, phrases are 
@@ -165,33 +168,97 @@ void CreateArrangement::setTechniques() {
 		}
 	}
 }	
+
+void CreateArrangement::createAnchors() {
+	int low = 1; bool newAnchor = true;
+	for(auto it = vNotes.begin(); it != vNotes.end(); ++it) {
+		int chordSize = isChord(vNotes, it, track.getMaxDif());
+		int fret = it->getFret();
+		if(chordSize > 1) {
+			auto n(getXsWithinRange(vNotes, it, chordSize));
+			fret = Note::findLowestFret(n, 1);
+			if(fret == low) { newAnchor = false; }
+			else { low = fret; }
+		}
+		else if(fret < low && low > 1) { low = fret; }
+		else if(fret >= low + DEFAULTANCHORWIDTH) { low = fret; }
+		// Bends tend to be on the third finger. Sometimes. I think.
+		// else if(it->isBend() && fret > 2) { low = fret-2; }
+		else { newAnchor = false; }
+		
+		if(newAnchor) {
+			Anchor a; a.time = it->getTime();
+			if(low == 0) { low = 1; }
+			a.fret = low;
+			a.width = DEFAULTANCHORWIDTH;
+			
+			vAnchors.push_back(a);
+			if(chordSize > 1) { it += chordSize - 1; }
+		}
+		else { newAnchor = true; }
+	}
+}
 	
-Difficulty CreateArrangement::createDifficulty(unsigned int dif) {
+Difficulty CreateArrangement::createDifficulty(unsigned int dif, std::ostream& file) {
 	Difficulty d;
 	// Identifying chords.
 	std::vector<Note> notes;
-	for(Note& n : vNotes) { if(n.minDif <= dif) { notes.push_back(n); } }
-	auto it = notes.begin();
-	while(it < notes.end()) {
-		int chordSize = isChord(vNotes, it, dif);			
-		// std::cout << (it - notes.begin()) << " | " << chordSize ENDLINE
-		if(chordSize == 1) { d.addNoteI(it - notes.begin()); }
-		else {
-			vChords.push_back(createChord(notes, it, chordSize));
-			d.addChordI(vChords.size() - 1); 
-		}
-		it += chordSize;
-	} 
-	// Generating anchors. 
-	if(anchors) {
-		/* for(const Meta& m : track.getMetas(eMeta::anchor)) {
-			// Somehow reduce number based on difficulty. 
-		} */
-	}
-	// Very basic auto-generation of anchors.
-	else { createAnchors(d, dif); }
 	
+	file << "Difficulty: " << dif ENDLINE
+	for(Note& n : vNotes) { if(n.minDif <= dif) { notes.push_back(n); } }
+	auto anchorIt = vAnchors.begin();
+	auto it = vNotes.begin();
+	while(it < vNotes.end()) {
+		if( it->minDif <= dif ) {
+			file << "\tNote Time: " << it->getTime() << " Dif: " 
+			<< it->minDif ENDLINE
+			while( anchorIt->time < it->getTime() ) { ++anchorIt; }
+			if( anchorIt->time == it->getTime() ) { 
+				d.addAnchorI( (anchorIt - vAnchors.begin()) );
+				++anchorIt;
+			}
+			auto jt = it;
+			std::vector<Note> chordNotes;
+			std::vector<unsigned int> chordRef;
+			while( jt->getTime() == it->getTime() ) { 
+				if( jt->minDif <= dif) { 
+					chordNotes.push_back( *jt ); 
+					chordRef.push_back( (jt - vNotes.begin()) );
+				}
+				++jt; 
+			}
+			if( chordNotes.size() == 1 ) { d.addNoteI( it - vNotes.begin() ); }
+			else {
+				vChords.push_back(createChord2( chordNotes, chordRef ));
+				d.addChordI(vChords.size() - 1); 
+			}
+			it += chordNotes.size();
+		} else { ++it; }
+	} 
 	return d;
+}
+
+Chord CreateArrangement::createChord2( const std::vector<Note>& notes, 
+	const std::vector<unsigned int>& indexes ) 
+	{
+	std::vector<Meta> mChords(track.getMetas(eMeta::chord)); // Chord info.
+	
+	float time = notes.at(0).getTime();
+	// The Template.
+	ChordTemplate newT(notes);
+	bool match = false; int id = -1;
+	for(ChordTemplate& oldT : vChordTemplate) { 
+		if(newT.toString() == oldT.toString()) 
+			{ id = oldT.getID(); match = true; break; } 
+	}
+	if(!match) { 
+		for(Meta& m : mChords) 
+			{ if(m.time == time) { newT.name = m.text; break; } }	
+		newT.setID(); id = newT.getID(); vChordTemplate.push_back(newT); 
+	}
+	// The Chord.
+	Chord c(indexes, time, id);
+	return c;
 }
 
 Chord CreateArrangement::createChord(const std::vector<Note>& nSource, 
@@ -222,37 +289,6 @@ Chord CreateArrangement::createChord(const std::vector<Note>& nSource,
 	Chord c(index, time, id);
 	return c;
 	}
-	
-void CreateArrangement::createAnchors(Difficulty& d, unsigned int dif) {
-	int low = 1; bool newAnchor = true;
-	for(auto it = vNotes.begin(); it != vNotes.end(); ++it) {
-		int chordSize = isChord(vNotes, it, dif);
-		int fret = it->getFret();
-		if(chordSize > 1) {
-			auto n(getXsWithinRange(vNotes, it, chordSize));
-			fret = Note::findLowestFret(n, 1);
-			if(fret == low) { newAnchor = false; }
-			else { low = fret; }
-		}
-		else if(fret < low && low > 1) { low = fret; }
-		else if(fret >= low + DEFAULTANCHORWIDTH) { low = fret; }
-		// Bends tend to be on the third finger. Sometimes. I think.
-		// else if(it->isBend() && fret > 2) { low = fret-2; }
-		else { newAnchor = false; }
-		
-		if(newAnchor) {
-			Anchor a; a.time = it->getTime();
-			if(low == 0) { low = 1; }
-			a.fret = low;
-			a.width = DEFAULTANCHORWIDTH;
-			
-			vAnchors.push_back(a);
-			d.addAnchorI(vAnchors.size()-1);
-			if(chordSize > 1) { it += chordSize - 1; }
-		}
-		else { newAnchor = true; }
-	}
-}
 
 void CreateArrangement::createPhrases() {
 	std::vector<Meta> mPhrase(track.getMetas(eMeta::phrase));
@@ -273,7 +309,7 @@ void CreateArrangement::createPhrases() {
 		if(it == mPhrase.end()) { duration = track.duration - m.time; }
 		else { duration = it->time - m.time; ++it; }
 				
-		auto tempN(getXsWithinTime(vNotes, m.time, duration));
+		auto tempN(getXsWithinTime(vNotes, m.time, m.time + duration));
 		unsigned int tempDif = findMaxDif(tempN);
 		
 		// Add 'new' phrases to the template list.
@@ -286,7 +322,7 @@ void CreateArrangement::createPhrases() {
 		Phrase p(m, id, count);
 		p.duration = duration;
 		p.maxDif = tempDif;
-		
+				
 		vPhrases.push_back(p);
 	}
 }

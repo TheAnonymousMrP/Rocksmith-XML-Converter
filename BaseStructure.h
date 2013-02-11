@@ -28,7 +28,7 @@ const std::vector<unsigned int> getIsWithinTime(std::vector<T> source,
 	float t = 0.0;
 	for(auto it = source.begin(); it != source.end(); ++it) {
 		t = it->getTime();
-		if( t > b ) { break; }
+		if( t >= b ) { break; }
 		if( t >= a ) { i.push_back( it - source.begin() ); }
 	}
 	return i;
@@ -41,7 +41,7 @@ const std::vector<X> getXsFromIsWithinTime(std::vector<X> xSource,
 	std::vector<X> x;
 	for(auto& i : iSource) { 
 		if( xSource.size() > i ) {
-			if( xSource.at( i ).getTime() > b ) { break; }
+			if( xSource.at( i ).getTime() >= b ) { break; }
 			if( xSource.at( i ).getTime() >= a )
 				{ x.push_back( xSource.at( i ) ); }
 		} else { break; }

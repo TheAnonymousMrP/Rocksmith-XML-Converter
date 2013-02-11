@@ -65,10 +65,11 @@ void RSXMLWrite::processArrangement() {
 	
 	writeStructure();
 
-	/* Transcription Track -- whatever that is. It seems to be one full 
-	difficulty of a song. Maybe max? */
 	const std::vector<Difficulty>& difficulties = arr.getDifficulties();
-	writeDifficulty(difficulties.back(), -1, true); 
+
+	/* Transcription Track -- whatever that is. It seems to be one full 
+	difficulty of a song. Maybe max? */	
+	// writeDifficulty(difficulties.back(), -1, true);
 	
 	// Levels -- where shit gets real.
     write << "\t<levels count=\"" << difficulties.size() << "\" >\n";
@@ -204,59 +205,73 @@ void RSXMLWrite::writeDifficulty(const Difficulty& d, int dif, bool trans) {
 	// Notes
 	auto& nSource(arr.getNotes());
 	auto& nPointer(d.getNotesI());
+	unsigned int nSize = 0;
 	// Chords
 	auto& cSource(arr.getChords());
 	auto& cPointer(d.getChordsI());
+	unsigned int cSize = 0;
 	// Anchors
 	auto& aSource(arr.getAnchors());
 	auto& aPointer(d.getAnchorsI());
+	unsigned int aSize = 0;
 	// Handshapes
 	auto& hSource(arr.getHands());
 	auto& hPointer(d.getHandsI());
+	unsigned int hSize = 0;
 	
 	/* In the interest of not repeating code, we're going to use 
 	stringstreams, and pop the results in after. */
 	std::ostringstream nS, cS, aS, hS;
 	for( auto& p : phrases ) {
-		if( dif == -1 || (unsigned)dif <= p.maxDif ) { 
-			float start = p.getTime();
-			float end = start + p.duration;
-			
-			auto& notes(getXsFromIsWithinTime(nSource, nPointer, start, end));
+		float start = p.getTime();
+		float end = start + p.duration;
+		
+		auto& notes(getXsFromIsWithinTime(nSource, nPointer, start, end));
+		auto& chords(getXsFromIsWithinTime(cSource, cPointer, start, end));
+		auto& ans(getXsFromIsWithinTime(aSource, aPointer, start, end));
+		auto& hands(getXsFromIsWithinTime(hSource, hPointer, start, end));
+		
+		/* std::cout << "ID: " << p.getID() << " Difficulty: " << dif
+		<< " Start: " << start << " End: " << end ENDLINE
+		std::cout << "\tCurrent Notes: " << notes.size() << " Current Chords: "
+		<< chords.size() ENDLINE */
+		
+		if( dif == -1 || (unsigned)dif <= p.maxDif ) 
+			{ 
 			for( const Note& n : notes ) { writeNote( nS, n, trans ); }
-			
-			auto& chords(getXsFromIsWithinTime(cSource, cPointer, start, end));
+			nSize += notes.size();
 			for( const Chord& c : chords ) { writeChord( cS, c, trans ); }
-			
-			auto& ans(getXsFromIsWithinTime(aSource, aPointer, start, end));
+			cSize += chords.size();
 			for( const Anchor& a : ans ) { writeAnchor( aS, a, trans ); }
-			
-			auto& hands(getXsFromIsWithinTime(hSource, hPointer, start, end));
-			for( const HandShape& h : hands ) { writeHand( hS, h, trans ); }		
+			aSize += ans.size();
+			for( const HandShape& h : hands ) { writeHand( hS, h, trans ); }
+			hSize += hands.size();
 		}
 	}
-	
 	// Notes
-	write << t << "\t<notes count=\"" << nPointer.size() << "\">\n";
+	write << t << "\t<notes count=\"" << nSize << "\">\n";
 	write << nS.str();
 	write << t << "\t</notes>\n";
 	
 	// Chords
-	write << t << "\t<chords count=\"" << cPointer.size() << "\">\n";
+	write << t << "\t<chords count=\"" << cSize << "\">\n";
 	write << cS.str();
 	write << t << "\t</chords>\n";
 	
 	// Anchors
-	write << t << "\t<anchors count=\"" << aPointer.size() << "\">\n";
+	write << t << "\t<anchors count=\"" << aSize << "\">\n";
 	write << aS.str();
 	write << t << "\t</anchors>\n";
 
 	// Handshapes	
-	write << t << "\t<handShapes count=\"" << hPointer.size() << "\">\n";
+	write << t << "\t<handShapes count=\"" << hSize << "\">\n";
 	write << hS.str();
 	write << t << "\t</handShapes>\n";
 	if(trans) { write << t << "</transcriptionTrack>\n"; }
 	else { write << t << "</level>\n"; }
+	
+	// Safety?
+	nS.str(""); cS.str(""); aS.str(""); hS.str("");
 }
 
 void RSXMLWrite::writeNote(std::ostream& dest, const Note& n, bool trans, 
