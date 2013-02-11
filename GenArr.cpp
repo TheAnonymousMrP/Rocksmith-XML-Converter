@@ -17,7 +17,7 @@ void assignIDs(std::vector<T>& source) {
 	}
 }
 
-/* void CreateArrangement::assignID(Chord c, std::vector<ChordTemplate> source) 
+/* void ARRCreate::assignID(Chord c, std::vector<ChordTemplate> source) 
 	{
 	bool match = false;
 	match = false;
@@ -27,7 +27,7 @@ void assignIDs(std::vector<T>& source) {
 	} */
 
 // Public methods
-void CreateArrangement::process() {
+void ARRCreate::process() {
 	// Beat grid is independent of anything else.
 	createBeatGrid();
 	
@@ -81,7 +81,7 @@ void CreateArrangement::process() {
 }
 
 // Private methods
-void CreateArrangement::createBeatGrid(){
+void ARRCreate::createBeatGrid(){
 	auto vT(track.getTempos());
 	int beat = 0; // Beat counter.
 	int bar = 0; // Bar counter.
@@ -110,7 +110,7 @@ void CreateArrangement::createBeatGrid(){
 	arr.setBeats(vBeats);
 }
 	
-void CreateArrangement::getTuning() {
+void ARRCreate::getTuning() {
 	auto mSpecial(track.getMetas(eMeta::special));
 	eTuning t = eTuning::standardE;
 	for(Meta m : mSpecial)
@@ -123,7 +123,7 @@ void CreateArrangement::getTuning() {
 	arr.setTuning(t); Note::setTuning(t);
 }
 
-void CreateArrangement::setTechniques() {
+void ARRCreate::setTechniques() {
 	auto mTech(track.getMetas(eMeta::tech));
 	if(mTech.size() > 0) {
 		float nTime = 0, xTime = 0; eTechnique t = none;
@@ -169,7 +169,7 @@ void CreateArrangement::setTechniques() {
 	}
 }	
 
-void CreateArrangement::createAnchors() {
+void ARRCreate::createAnchors() {
 	int low = 1; bool newAnchor = true;
 	for(auto it = vNotes.begin(); it != vNotes.end(); ++it) {
 		int chordSize = isChord(vNotes, it, track.getMaxDif());
@@ -199,7 +199,7 @@ void CreateArrangement::createAnchors() {
 	}
 }
 	
-Difficulty CreateArrangement::createDifficulty(unsigned int dif, std::ostream& file) {
+Difficulty ARRCreate::createDifficulty(unsigned int dif, std::ostream& file) {
 	Difficulty d;
 	// Identifying chords.
 	std::vector<Note> notes;
@@ -238,7 +238,7 @@ Difficulty CreateArrangement::createDifficulty(unsigned int dif, std::ostream& f
 	return d;
 }
 
-Chord CreateArrangement::createChord2( const std::vector<Note>& notes, 
+Chord ARRCreate::createChord2( const std::vector<Note>& notes, 
 	const std::vector<unsigned int>& indexes ) 
 	{
 	std::vector<Meta> mChords(track.getMetas(eMeta::chord)); // Chord info.
@@ -261,7 +261,7 @@ Chord CreateArrangement::createChord2( const std::vector<Note>& notes,
 	return c;
 }
 
-Chord CreateArrangement::createChord(const std::vector<Note>& nSource, 
+Chord ARRCreate::createChord(const std::vector<Note>& nSource, 
 	std::vector<Note>::iterator it, int chordSize)
 	{
 	std::vector<Meta> mChords(track.getMetas(eMeta::chord)); // Chord info.
@@ -290,7 +290,7 @@ Chord CreateArrangement::createChord(const std::vector<Note>& nSource,
 	return c;
 	}
 
-void CreateArrangement::createPhrases() {
+void ARRCreate::createPhrases() {
 	std::vector<Meta> mPhrase(track.getMetas(eMeta::phrase));
 
 	std::vector<Meta>::iterator it = mPhrase.begin() + 1;
@@ -327,7 +327,7 @@ void CreateArrangement::createPhrases() {
 	}
 }
 	
-void CreateArrangement::createSections() {
+void ARRCreate::createSections() {
 	std::vector<Meta> mSection(track.getMetas(eMeta::marker));
 	
 	std::vector<Meta>::iterator it = mSection.begin(); ++it;

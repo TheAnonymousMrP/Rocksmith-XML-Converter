@@ -6,7 +6,7 @@
 create an arrangement ready to be written to the appropriate file (ie, a
 Rocksmith XML). */
 	
-class CreateArrangement {
+class ARRCreate {
 	// Private
 	Arrangement arr;
 	Track track;
@@ -42,7 +42,7 @@ class CreateArrangement {
 	void createSections();
 	
 	public:
-		CreateArrangement(const Track& t) : arr(t), track(t) { 
+		ARRCreate(const Track& t) : arr(t), track(t) { 
 			if(t.getMetas(eMeta::anchor).size() > 0) { anchors = true; }
 			else { anchors = false; }
 		};

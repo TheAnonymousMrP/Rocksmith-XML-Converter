@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 			rsxml.processVocals();
 		}
 		else {
-			CreateArrangement create((*it));
+			ARRCreate create((*it));
 			create.process();
 			RSXMLWrite rsxml(midiName, title, create.getArrangement());
 			rsxml.processArrangement();

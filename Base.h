@@ -14,7 +14,7 @@
 #define DEFAULTTIMESIGNUM 4 // Default numerator for the time signature
 #define DEFAULTTIMESIGDEN 4 // Default denominator for the time signature
 
-#define GOTHERE std::cout << "Got here!\n";
+// #define GOTHERE std::cout << "Got here!\n";
 
 enum eMeta {
 	anchor,

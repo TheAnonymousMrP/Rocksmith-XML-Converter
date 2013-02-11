@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-#ifndef _BASE_TRACK_
+#ifndef _BASE_TRACK
 #include "BaseTrack.h"
 #endif
 
@@ -53,8 +53,6 @@ class MIDIRead {
 	float convertBytes2Float(const std::vector<unsigned char>& b);
 	float convertSMPTE2Time(const std::vector<unsigned char>& b);
 	std::string convertBytes2String(const std::vector<unsigned char>& b);
-	
-	
 	
 	public:
 		MIDIRead(std::string s = "", eMidi m = eMidi::normal);
