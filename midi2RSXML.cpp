@@ -31,13 +31,8 @@ int main(int argc, char* argv[]) {
 			how Logic prepares MIDI files. 
 			
 	Known bugs:
-		- isChord(...):
-			-  If notes are not arranged in ascending or descending 
-			difficulty, this won't work properly. To mitigate the damage,
-			the method will continue so long as their is at least one further
-			note at same time. These 'bad' notes will be added to the current 
-			difficulty irrespective of their proper difficulty.
-			
+		- Additional arrangements don't reset the ChordTemplate and Phrase IDs.
+		This causes an error when converting to .sng.
 	*/
 			
 	std::string midiName = argv[1]; /* If a filename isn't the first argument, 
@@ -62,31 +57,31 @@ int main(int argc, char* argv[]) {
 		if(!strcmp(argv[i],"-extlyrics")) { externalLyrics = 1; }
 		// Palm-mute Toggle flag.
 		if(!strcmp(argv[i],"-palmtoggle")) { palmToggle = 1; }
-		// Logic flag.
+		/* Logic flag.
 		if(!strcmp(argv[i],"-logic")) { midiMode = eMidi::logic; }
-		if(!strcmp(argv[i],"-rb3")) { midiMode = eMidi::rb3; }
+		if(!strcmp(argv[i],"-rb3")) { midiMode = eMidi::rb3; } */
 	}
 	
-	MIDIRead midi(midiName, midiMode);
-	midi.process(arrN);
+	MIDIReadDefault midi( midiName );
+	midi.process( arrN );
 	// midi.debug();
 	
-	const std::vector<Track>& tracks = midi.getTracks();
+	const std::vector<MIDITrack>& tracks = midi.getTracks();
 
-	for(auto it = tracks.begin(); it != tracks.end(); ++it) {
-		if(tracks.size() > 0 && (it - tracks.begin()) == 0) { }
-		else if(it->name == "Vocals" || it->type == vocal) {
-			ArrVocal v;
-			if(externalLyrics)
-				{ ArrVocal v((*it), midiName); }
-			else { ArrVocal v((*it)); }
-			RSXMLWrite rsxml(midiName, v);
+	for( auto it = tracks.begin(); it != tracks.end(); ++it ) {
+		if( tracks.size() > 0 && (it - tracks.begin()) == 0 ) { }
+		else if( it->name == "Vocals" || it->type == eTrackType::VOCALS ) {
+			ARRCreateVocals a();
+			std::string extFileName = "";
+			if ( externalLyrics ) { extFileName = midiName; }
+			ARRVocals = a.CreateVocals( *it, fileName );
+			RSXMLWrite rsxml( midiName, v );
 			rsxml.processVocals();
 		}
 		else {
-			ARRCreate create((*it));
+			ARRCreate create( *it );
 			create.process();
-			RSXMLWrite rsxml(midiName, title, create.getArrangement());
+			RSXMLWrite rsxml( midiName, title, create.getArrangement() );
 			rsxml.processArrangement();
 		}
 	} 

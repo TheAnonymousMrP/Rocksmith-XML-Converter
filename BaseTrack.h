@@ -5,15 +5,14 @@
 #include "Base.h"
 #endif
 
-enum eTrackType
-	{
+enum eTrackType {
 	vocal,
 	single,
 	combo,
 	chords,
 	bass,
 	bassPick,
-	};
+};
 
 class Track {
 	// Private

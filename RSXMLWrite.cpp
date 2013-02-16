@@ -84,14 +84,14 @@ void RSXMLWrite::processVocals() {
 	std::string file = fileName + "-Vocals.xml";
 	write.open(file.c_str()); // This is the file we're writing to.
 	
-	std::vector<Lyric> vLyrics(arrV.getLyrics());
+	std::vector<Lyric> vLyrics( arrV.GetLyrics() );
 	
 	write << "<?xml version='1.0' encoding='UTF-8'?> \n"
 	<< "<vocals count=\"" << vLyrics.size() << "\">\n";
 	
-	for(Lyric& l : vLyrics)
+	for( Lyric& l : vLyrics )
 		{
-		write << "\t<vocal time=\"" << l.getTime() << "\" note=\"" 
+		write << "\t<vocal time=\"" << l.getTime() + DEFAULTOFFSET << "\" note=\"" 
 		<< l.getPitch() << "\" length=\"" << l.getDuration() << "\" lyric=\"" 
 		<< l.word << "\"/>\n";
 		
@@ -113,23 +113,14 @@ void RSXMLWrite::writeStructure() {
 	auto& phrases = arr.getPhraseTemplates();
 	write << "\t<phrases count=\"" << phrases.size() << "\">\n";
 	for(auto& t : phrases) {
-		write << "\t\t<phrase name=\"" << t.name << "\" maxDifficulty=\""
-		<< t.maxDif << "\" disparity=\"" << t.disparity << "\" ignore=\"" 
-		<< t.ignore << "\" solo=\"" << t.solo << "\" />\n";
+		write << t.ToXML();
 	}
 	write << "\t</phrases>\n";
 	// <phraseIteration time="10.000" phraseId="0" variation=""/>
 	auto& phraseIt = arr.getPhrases();
 	write << "\t<phraseIterations count=\"" << phraseIt.size() << "\">\n";
 	for(auto& p : phraseIt) {
-		/* Variation always seems to be incremented. This may be dependent
-		on whether the contents are changed, but maybe not. Slightly 
-		complicating matters is that the 'official' way seems to be to use
-		roman numerals. */
-		std::string var = std::to_string(p.getVariation());
-		write << "\t\t<phraseIteration time=\"" << p.getTime()
-		<< "\" phraseId=\"" << p.getID() << "\" variation=\"" << var 
-		<< "\" />\n";
+		write << p.ToXML();
 	}
 	write << "\t</phraseIterations>\n";
 	
@@ -147,17 +138,7 @@ void RSXMLWrite::writeStructure() {
 	auto& chords = arr.getChordTemplates();
 	write << "\t<chordTemplates count=\"" << chords.size() << "\">\n";
 	for(auto& t : chords) {
-		write << "\t\t<chordTemplate chordName=\"" << t.name
-		<< "\" displayName=\"" << t.display << "\" ";
-		// Frets
-		for(int i = 0; i < NUMSTRINGS; ++i) {
-			write << "fret" << i << "=\"" << t.getFret(i) << "\" ";
-		}
-		// Fingers
-		for(int i = 0; i < NUMSTRINGS; ++i) {
-			write << "finger" << i << "=\"" << t.getFinger(i) << "\" ";
-		}
-		write << " />\n";
+		t.ToXML();
 	}
 	write << "\t</chordTemplates>\n";
 	
@@ -178,7 +159,7 @@ void RSXMLWrite::writeStructure() {
 	auto& beats = arr.getBeats();
 	write << "\t<ebeats count=\"" << beats.size() << "\">\n";
 	for(auto& b : beats) {
-		write << "\t\t<ebeat time=\"" << b.time << "\" measure=\""
+		write << "\t\t<ebeat time=\"" << b.time + DEFAULTOFFSET << "\" measure=\""
 		<< b.bar << "\" />\n";
 	}
 	write << "\t</ebeats>\n";
@@ -186,14 +167,12 @@ void RSXMLWrite::writeStructure() {
 	auto& sections = arr.getSections();
 	write << "\t<sections count=\"" << sections.size() << "\">\n";
 	for(auto& s : sections) {
-		write << "\t\t<section name=\"" << s.getName() 
-		<< "\" number=\"" << s.getID() << "\" startTime=\"" 
-		<< s.getTime() << "\" />\n";
+		write << s.ToXML();
 	}
 	write << "\t</sections>\n";
 }
 
-void RSXMLWrite::writeDifficulty(const Difficulty& d, int dif, bool trans) {
+void RSXMLWrite::writeDifficulty( const Difficulty& d, int dif, bool trans ) {
 	/* <level difficulty="0"> */
 	std::string t = "";
 	if(trans) { t += "\t"; write << t << "<transcriptionTrack "; }
@@ -274,9 +253,7 @@ void RSXMLWrite::writeDifficulty(const Difficulty& d, int dif, bool trans) {
 	nS.str(""); cS.str(""); aS.str(""); hS.str("");
 }
 
-void RSXMLWrite::writeNote(std::ostream& dest, const Note& n, bool trans, 
-	bool chord) 
-	{
+void RSXMLWrite::writeNote( std::ostream& dest, const Note& n, bool trans, bool chord ) {
 	/* <note time="111.460" linkNext="0" accent="0" bend="1" fret="17" 
 	hammerOn="0" harmonic="0" hopo="0" ignore="0" leftHand="-1" mute="0" 
 	palmMute="0" pluck="-1" pullOff="0" slap="-1" slideTo="-1" string="5" 
@@ -307,7 +284,7 @@ void RSXMLWrite::writeNote(std::ostream& dest, const Note& n, bool trans,
 	
 	if(chord) { t += "\t<chordN"; }
 	else { t += "<n"; }
-	dest << t << "ote time=\"" << n.getTime() << "\" sustain=\"" 
+	dest << t << "ote time=\"" << n.getTime() + DEFAULTOFFSET << "\" sustain=\"" 
 	<< n.getDuration() << "\" string=\"" << n.getString() << "\" fret=\"" 
 	<< n.getFret() << "\" ignore=\"" << (int)ignore << "\" linkNext=\""
 	<< (int)linkNext << "\" bend=\"" << (int)n.isBend() << "\" harmonic=\"" 
@@ -330,15 +307,14 @@ void RSXMLWrite::writeNote(std::ostream& dest, const Note& n, bool trans,
 	else { dest << -1 << "\" />\n"; }
 }
 
-void RSXMLWrite::writeChord(std::ostream& dest, const Chord& c, bool trans) 
-	{
+void RSXMLWrite::writeChord( std::ostream& dest, const Chord& c, bool trans ) {
 	/* <chord time="48.379" linkNext="0" accent="0" chordId="0" 
 	fretHandMute="0" highDensity="0" ignore="0" palmMute="0" strum="down">
 	*/
 	std::string t = "";
 	if(!trans) { t = "\t\t"; }
 	t += "\t\t\t";
-	dest << t << "<chord time=\"" << c.getTime() << "\" linkNext=\""
+	dest << t << "<chord time=\"" << c.getTime() + DEFAULTOFFSET << "\" linkNext=\""
 	<< c.getLinkNext() << "\" accent=\"" << c.getAccent() << "\" chordId=\"" 
 	<< c.getID() << "\" fretHandMute=\"" << c.getFretHandMute() 
 	<< "\" highDensity=\"" << c.getHighDensity() << "\" ignore=\"" 
@@ -353,23 +329,21 @@ void RSXMLWrite::writeChord(std::ostream& dest, const Chord& c, bool trans)
 	dest << t << "</chord>\n";
 }
 
-void RSXMLWrite::writeAnchor(std::ostream& dest, const Anchor& a, bool trans) 
-	{
+void RSXMLWrite::writeAnchor( std::ostream& dest, const Anchor& a, bool trans ) {
 	/* <anchor time="11.579" fret="8" width="4.000"/> */
 	std::string t = ""; 
 	if(!trans) { t = "\t\t"; }
 	t += "\t\t\t";
-	dest << t << "<anchor time=\"" << a.time << "\" fret=\""
+	dest << t << "<anchor time=\"" << a.time + DEFAULTOFFSET << "\" fret=\""
 	<< a.fret << "\" width=\"" << a.width << "\" />\n";
 }
 	
-void RSXMLWrite::writeHand(std::ostream& dest, const HandShape& h, bool trans) 
-	{
+void RSXMLWrite::writeHand(std::ostream& dest, const HandShape& h, bool trans) {
 	/* <handShape chordId="27" endTime="26.958" startTime="26.409"/> */
 	std::string t = ""; 
 	if(!trans) { t = "\t\t"; }
 	t += "\t\t\t";
-	dest << t << "<handShape startTime=\"" << h.time << "\" endTime=\"" 
+	dest << t << "<handShape startTime=\"" << h.time + DEFAULTOFFSET << "\" endTime=\"" 
 	<< h.duration << "\" chordId=\"" << h.id << "\" />\n";
 }	
 

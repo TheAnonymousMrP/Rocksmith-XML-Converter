@@ -1,8 +1,8 @@
 #ifndef _BASE_STRUCTURE_
 #define _BASE_STRUCTURE_
 
-#ifndef _BASE_TRACK
-#include "BaseTrack.h"
+#ifndef _BASE
+#include "BaseObjects.h"
 #endif
 
 // Methods

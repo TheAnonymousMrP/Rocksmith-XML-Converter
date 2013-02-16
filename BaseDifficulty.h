@@ -1,8 +1,8 @@
 #ifndef _BASE_DIFFICULTY_
 #define _BASE_DIFFICULTY_
 
-#ifndef _BASE_TRACK
-#include "BaseTrack.h"
+#ifndef _MIDI_READ_OBJECTS
+#include "MIDIObjects.h"
 #endif
 
 #define DEFAULTANCHORWIDTH 4

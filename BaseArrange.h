@@ -9,10 +9,6 @@
 #include "BaseStructure.h"
 #endif
 
-#ifndef _BASE_TRACK
-#include "BaseTrack.h"
-#endif
-
 // Class declarations
 struct Beat
 	{
