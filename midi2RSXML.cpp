@@ -1,5 +1,16 @@
-#include "midi2RSXML.h"
-using namespace std;
+#include "MIDIReaderDefault.h"
+#include "ARRCreateGuitar.cpp"
+#include "ARRCreateVocals.h"
+#include "RSXMLCreateGuitar.h"
+#include "RSXMLWriter.cpp"
+
+#include <cstring>
+#include <string>
+#include <vector>
+
+// Flag-based variables
+bool palmToggle = false;
+bool externalLyrics = false; 
 
 int main(int argc, char* argv[]) {
 	/* Argument handling.
@@ -62,27 +73,27 @@ int main(int argc, char* argv[]) {
 		if(!strcmp(argv[i],"-rb3")) { midiMode = eMidi::rb3; } */
 	}
 	
-	MIDIReadDefault midi( midiName );
-	midi.process( arrN );
+	MIDI::ReaderDefault midi( midiName );
+	midi.Process( arrN );
 	// midi.debug();
 	
-	const std::vector<MIDITrack>& tracks = midi.getTracks();
+	auto& tracks = midi.GetTracks();
 
+	RSXML::Writer rsxml( midiName, title );
 	for( auto it = tracks.begin(); it != tracks.end(); ++it ) {
 		if( tracks.size() > 0 && (it - tracks.begin()) == 0 ) { }
-		else if( it->name == "Vocals" || it->type == eTrackType::VOCALS ) {
-			ARRCreateVocals a();
+		else if( it->name == "Vocals" || it->type == RSXML::eTrackType::VOCAL ) {
+			ARR::CreateVocals a;
 			std::string extFileName = "";
 			if ( externalLyrics ) { extFileName = midiName; }
-			ARRVocals = a.CreateVocals( *it, fileName );
-			RSXMLWrite rsxml( midiName, v );
-			rsxml.processVocals();
+			ARR::Vocals v = a.Create( *it, extFileName );
+			rsxml.WriteVocals( v );
 		}
 		else {
-			ARRCreate create( *it );
-			create.process();
-			RSXMLWrite rsxml( midiName, title, create.getArrangement() );
-			rsxml.processArrangement();
+			ARR::CreateGuitar ac;
+			ARR::Guitar ag = ac.Create( *it );
+			RSXML::Guitar rg;
+			rsxml.WriteGuitar( rg );
 		}
 	} 
 	

@@ -1,36 +1,57 @@
 #ifndef _RSXML_STRUCTURE_
 #define _RSXML_STRUCTURE_
 
+#ifndef _BASE_OBJECTS
+#include "BaseObjects.h"
+#endif
+
 #include <string>
 #include <sstream>
 
 namespace RSXML {
 	class TemplateSync {
 		public:
-			TemplateSync( const unsigned int& i ) { id = i; };
+			TemplateSync( const unsigned int& i = 0 ) { id = i; };
 			
-			unsigned int&			id;
+			unsigned int			id;
+	};
+	
+	class Beat : public virtual Base::BaseObject {
+		public:
+			Beat( const float& tim = 0.000f, const int& ba = -1 ) 
+				: BaseObject( tim ) { bar = ba; };
+		
+			const std::string	ToXML() const;
+				
+		private:
+			int					bar;
+	};
+	
+	const std::string Beat::ToXML() const {
+		std::stringstream ss;
+		ss << "\t\t<ebeat time=\"" << time << "\" measure=\"" << bar << "\" />\n";
+		return ss.str();
 	};
 	
 	class ChordTemplate : public TemplateSync {
 		public:
-			ChordTemplate( const array<unsigned char, 6>& fre, 
-				const array<unsigned char, 6>& fin, const std::string& cN = "",
+			ChordTemplate( const std::array<unsigned char, 6>& fre, 
+				const std::array<unsigned char, 6>& fin, const std::string& cN = "",
 				const std::string& dN = "", const unsigned int& i = 0 ) 
-				: TemplateSync( i ) 
-				{ frets = fre; fingers = fin; chordName = cN; displayName = dN; };
+				: TemplateSync( i ), frets( fre ), fingers( fin ) 
+				{ chordName = cN; displayName = dN; };
 			
-			std::string			chordName;
-			std::string			displayName;
+			std::string							chordName;
+			std::string							displayName;
 			
-			const array<unsigned char, 6>&	GetFrets() const { return frets; };
-			const array<unsigned char, 6>&	GetFingers() const { return fingers; };
+			const std::array<unsigned char, 6>&	GetFrets() const { return frets; };
+			const std::array<unsigned char, 6>&	GetFingers() const { return fingers; };
 			
-			const std::string				ToXML() const;
+			const std::string					ToXML() const;
 			
 		private:
-			array<unsigned char, 6>			frets;
-			array<unsigned char, 6>			fingers;	
+			std::array<unsigned char, 6>		frets;
+			std::array<unsigned char, 6>		fingers;	
 	};
 	
 	const std::string ChordTemplate::ToXML() const {
@@ -38,16 +59,29 @@ namespace RSXML {
 		ss << "\t\t<chordTemplate chordName=\"" << chordName
 		<< "\" displayName=\"" << displayName << "\" ";
 		// Frets
-		for( auto f = frets.begin; f != frets.end; ++f )
+		for( auto f = frets.begin(); f != frets.end(); ++f )
 			{ ss << "fret" << (f - frets.begin()) << "=\"" << *f << "\" "; }
 		// Fingers
-		for( auto f = fingers.begin; f != fingers.end; ++f )
+		for( auto f = fingers.begin(); f != fingers.end(); ++f )
 			{ ss << "finger" << (f - fingers.begin()) << "=\"" << *f << "\" "; }
 		ss << " />\n";
 		return ss.str();
 	};
 	
-	// Phrase-related.
+	class Event : public Base::MetaString {
+		public:
+			Event( const float& tim = 0.000f, const std::string& tex = "" ) 
+				: Base::MetaString( Base::eMeta::EVENT, tim, tex ) { };
+		
+			const std::string 	ToXML() const;
+	};
+	
+	const std::string Event::ToXML() const { 
+		std::stringstream ss;
+		ss << "\t\t<event time=\"" << time << "\" code=\"" << text << "\" />\n";
+		return ss.str();
+	};
+	
 	class PhraseTemplate : public TemplateSync {
 		public:
 			PhraseTemplate( const std::string& nam = "", const unsigned char& dif = 0,
@@ -79,19 +113,17 @@ namespace RSXML {
 		return ss.str();
 	};
 	
-	class Phrase : public TemplateSync {
+	class Phrase : public virtual Base::BaseObject, public TemplateSync {
 		public:
 			Phrase( const float& tim = 0.000f, const unsigned int& i = 0, 
-				const unsigned char& var = 0x00 ) 
-				: TemplateSync( i ) { time = tim; variation = var };
+				const unsigned char& var = 0x00 ) : BaseObject( tim ), TemplateSync( i ) 
+				{ variation = var; };
 			
-			const float&			GetTime() const { return time; };	
 			const unsigned char&	GetVariation() const { return variation; };
 			
 			const std::string		ToXML() const;
 			
 		private:
-			float					time;
 			unsigned char			variation;
 	};
 	
@@ -107,26 +139,28 @@ namespace RSXML {
 		return ss.str();
 	};
 	
-	class LinkedDiffs;
+	class LinkedDiff { 
+		// <linkedDiff childId="17" parentId="15"/> */
+	};
 	
-	class NewLinkedDiffs;
+	class NewLinkedDiff { 
+		// <newLinkedDiff phrases="15,17" levelBreak="-1" ratio="1.000"/>
+	};
 	
-	class PhraseProperties;
+	class PhraseProperty { };
 	
-	class Section {
+	class Section : public virtual Base::BaseObject {
 		public:
 			Section( const float& tim = 0.000f, const std::string nam = "", 
-				const unsigned char& it = 0x00 ) 
-				{ time = tim; name = nam; iteration = it };
+				const unsigned char& it = 0x00 ) : BaseObject( tim )
+				{ name = nam; iteration = it; };
 			
-			const unsigned char&	GetIteration() const { return iteration; };
 			const std::string&		GetName() const { return name; };
-			const float&			GetTime() const { return time; };	
+			const unsigned char&	GetIteration() const { return iteration; };
 			
 			const std::string		ToXML() const;
 			
 		private:
-			float					time;
 			std::string				name;
 			unsigned char			iteration;
 	};

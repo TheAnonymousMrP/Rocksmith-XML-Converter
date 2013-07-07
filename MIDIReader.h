@@ -1,15 +1,13 @@
-#ifndef _MIDI_READ_
-#define _MIDI_READ_
+#ifndef _MIDI_READER_
+#define _MIDI_READER_
 
-#include <cmath>
-#include <algorithm>
+#ifndef _MIDI_TRACK
+#include "MIDITrack.h"
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
-#ifndef _MIDI_READ_OBJECTS
-#include "MIDIObjects.h"
-#endif
 
 #define FILETYPEBYTE 9
 #define HEADERLENGTH 14
@@ -22,6 +20,8 @@ namespace MIDI {
 	class Reader {
 		public:
 			Reader(std::string s = "") { fileName = s; currentTempo = DEFAULTTEMPO; };
+			
+			void 						Process( unsigned int numArrs );
 		
 			const float& 				GetSongLength() const { return songLength; };	 
 			const MIDI::Track&			GetTrack(int i) const { return tracks.at(i); };
@@ -35,8 +35,6 @@ namespace MIDI {
 			
 			float						currentTempo;
 			unsigned int				division;
-			
-			void 						Process( unsigned int numArrs );
 			
 			// Copies file to memblock.
 			unsigned int 				GetMIDI( std::string midiName ); 
@@ -56,46 +54,11 @@ namespace MIDI {
 											MIDI::Track& track ) { return 0; };	
 				
 			// Converters and stuff
-			float 			GetCurrentTempo( std::vector<Tempo>::const_iterator& tCount, 
-								const std::vector<Tempo>::const_iterator& tEnd, 
-								const float& timer ) const;
-			/* float 		ConvertDelta2Time( const int& delta, const float& tempo ) 
-								const;
-			unsigned int 	ConvertBytes2VLQ( const std::vector<unsigned char>& vlq ) 
-								const;
-			float 			ConvertBytes2Float( const std::vector<unsigned char>& b ) 
-								const;
-			float 			ConvertSMPTE2Time( const std::vector<unsigned char>& b ) 
-								const;
-			std::string 	ConvertBytes2String( const std::vector<unsigned char>& b ) 
-								const; */
+			float 	GetCurrentTempo( std::vector<Base::Tempo>::const_iterator& tCount, 
+						const std::vector<Base::Tempo>::const_iterator& tEnd, 
+						const float& timer ) const;
 	};
 
-	unsigned int Reader::GetMIDI( std::string midiName ) {
-		// Taking the content from a MIDI file.
-		std::ifstream midi;
-		std::ifstream::pos_type midiSize;
-		midiName += ".mid";
-		midi.open(midiName.c_str(), 
-			std::ios::in | std::ios::binary | std::ios::ate);
-		if(midi.is_open())
-			{
-			midiSize = midi.tellg();;
-			memblock = new unsigned char[midiSize];
-			// creating a (signed) buffer so we can just transfer stuff across.
-			char* membuffer = new char[midiSize];
-			midi.seekg(0);
-			midi.read(membuffer, midiSize);
-			// Inelegant transfer of signed to unsigned.
-			for(int i = 0; i < midiSize; i++)
-				{ memblock[i] = membuffer[i]; }
-			}
-		else { std::cout << "File could not be opened." << "\n"; } 
-		midi.close();
-		
-		return midiSize;
-	}	
-	
 	void Reader::Process( unsigned int numArrs ) {
 		if(fileName == "")
 			{ std::cout << "No MIDI file was selected to be read.\n"; }
@@ -121,15 +84,38 @@ namespace MIDI {
 		}
 	}
 	
+	unsigned int Reader::GetMIDI( std::string midiName ) {
+		// Taking the content from a MIDI file.
+		std::ifstream midi;
+		std::ifstream::pos_type midiSize;
+		midiName += ".mid";
+		midi.open(midiName.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
+		if(midi.is_open()) {
+			midiSize = midi.tellg();;
+			memblock = new unsigned char[midiSize];
+			// creating a (signed) buffer so we can just transfer stuff across.
+			char* membuffer = new char[midiSize];
+			midi.seekg(0);
+			midi.read( membuffer, midiSize );
+			// Inelegant transfer of signed to unsigned.
+			for(int i = 0; i < midiSize; i++)
+				{ memblock[i] = membuffer[i]; }
+		}
+		else { std::cout << "File could not be opened." << "\n"; } 
+		midi.close();
+		
+		return midiSize;
+	}
+	
 	unsigned int Reader::ProcessDelta( const unsigned int& startPoint ) {
 		MIDI::Track track;
 		
 		if( tracks.size() > 0 ) { 
 			track.SetTempos( tracks.at(0).GetTempos() ); 
-			track.SetMarkers( tracks.at(0).GetMetaStrings( eMeta::MARKER ) );
+			track.SetMarkers( tracks.at(0).GetMetaStrings( Base::eMeta::MARKER ) );
 		}
-		std::vector<Tempo>::const_iterator tCount = track.GetTempos().begin();
-		std::vector<Tempo>::const_iterator tEnd = track.GetTempos().end();
+		std::vector<Base::Tempo>::const_iterator tCount = track.GetTempos().begin();
+		std::vector<Base::Tempo>::const_iterator tEnd = track.GetTempos().end();
 		currentTempo = DEFAULTTEMPO;
 		float timer = 0.000f;
 		
@@ -220,12 +206,12 @@ namespace MIDI {
 		return it;
 	}
 	
-	float Reader::GetCurrentTempo( std::vector<Tempo>::const_iterator& tCount, 
-		const std::vector<Tempo>::const_iterator& tEnd, const float& timer ) const
+	float Reader::GetCurrentTempo( std::vector<Base::Tempo>::const_iterator& tCount, 
+		const std::vector<Base::Tempo>::const_iterator& tEnd, const float& timer ) const
 		{
 		float tempo = currentTempo;
 		if( tCount != tEnd && timer >= tCount->GetTime() ) 
-			{ tempo = tCount->GetFloat(); ++tCount; }
+			{ tempo = tCount->GetTempo(); ++tCount; }
 		return tempo;
 	}
 };
