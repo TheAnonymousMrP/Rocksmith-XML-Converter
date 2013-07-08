@@ -1,4 +1,10 @@
+#ifndef ARR_CREATE_GUITAR
 #include "ARRCreateGuitar.h"
+#endif
+
+#ifndef DEBUG_STUFF
+#include "debug.h"
+#endif
 
 namespace ARR {
 	const ARR::Guitar CreateGuitar::Create( const MIDI::Track& t, const bool& bass ) { 
@@ -26,10 +32,13 @@ namespace ARR {
 		
 		std::vector<ARR::Chord> chords;
 		std::vector<ARR::Difficulty> difficulties;
+		WOOP
+		std::cout << track.GetMaxDifficulty() ENDLINE
 		for( unsigned int i = 0; i <= track.GetMaxDifficulty(); ++i ) {
 			Difficulty d = CreateDifficulty( i, notes, chords );
 			difficulties.push_back( d );
 		};
+		GOTHERE
 		
 		g.SetDifficulties( difficulties );
 		g.SetNotes( notes );
@@ -51,14 +60,13 @@ namespace ARR {
 		for( auto& m : mSpecial ) {
 			if( m.GetString() == "TStandardE" ) { tun = eTuning::STANDARD_E; break;}
 			else if( m.GetString() == "TDropD" ) { tun = eTuning::DROP_D; break; }
-			else if( m.GetString() == "TStandardD" ) { tun = eTuning::STANDARD_D; break; }
+			else if( m.GetString() == "TStandardEb" ) { tun = eTuning::STANDARD_EB; break; }
+			else if( m.GetString() == "TOpenG" ) { tun = eTuning::OPEN_G; break; }
 		}
-		g.tuning = aTuning[tun]; ARR::Note::SetTuning( g.tuning );
+		g.tuning = aTuning[tun];
 	}
 	
-	std::vector<ARR::Note>	CreateGuitar::ConvertMIDI2ARRNotes( 
-		std::vector<MIDI::Note> source )
-		{
+	std::vector<ARR::Note> CreateGuitar::ConvertMIDI2ARRNotes( std::vector<MIDI::Note> source ) {
 		/* We intentionally 'slice' the MIDI note to a base note and then add it to 
 		the ARR note vector. Provides an index for the note. */
 		std::vector<ARR::Note> dest;
@@ -130,11 +138,9 @@ namespace ARR {
 		}
 	}
 	
-	const Difficulty CreateGuitar::CreateDifficulty( const unsigned int& dif, 
-		const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) 
-		{
+	const Difficulty CreateGuitar::CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) {
 		Difficulty d;
-		
+		GOTHERE
 		std::vector<unsigned int> index;
 		std::vector<unsigned int> notesIndex;
 		std::vector<unsigned int> chordsIndex;

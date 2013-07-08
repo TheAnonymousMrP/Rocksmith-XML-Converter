@@ -172,18 +172,18 @@ namespace RSXML {
 		auto& aIndex( d.GetAnchorsIndex() );
 		unsigned int aSize = 0;
 		// Handshapes
-		auto& hSource( arrangement.getHands() );
+		auto& hSource( arrangement.GetHandShapes() );
 		auto& hIndex( d.GetHandShapesIndex() );
 		unsigned int hSize = 0;
 		
-		/* In the interest of not repeating code, we're going to use 
+		/* For the sake of not repeating code, we're going to use 
 		stringstreams, and pop the results in after. */
 		std::ostringstream nS(""), cS(""), aS(""), hS("");
 		for( auto it = phraseIt.begin(); it != phraseIt.end(); ++it ) {
 			float start = it->GetTime();
 			float end = 0.000f; 
 			if( it != (phraseIt.end() - 1) ) { end = (it + 1)->GetTime(); }
-			else { end = d.GetDuration(); }
+			else { end = d.GetLength(); }
 			
 			auto& notes( getXsFromIsWithinTime( nSource, nIndex, start, end ) );
 			auto& chords( getXsFromIsWithinTime( cSource, cIndex, start, end ) );

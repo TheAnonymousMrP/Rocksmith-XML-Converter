@@ -1,11 +1,11 @@
-#ifndef _ARR_CREATE_VOCALS_
-#define _ARR_CREATE_VOCALS_
+#ifndef ARR_CREATE_VOCALS
+#define ARR_CREATE_VOCALS
 
-#ifndef _ARR_VOCALS
+#ifndef ARR_VOCALS
 #include "ARRVocals.h"
 #endif
 
-#ifndef _MIDI_TRACK
+#ifndef MIDI_TRACK
 #include "MIDITrack.h"
 #endif
 
@@ -21,10 +21,10 @@ namespace ARR {
 			const Vocals Create( const MIDI::Track& t, std::string ext = "" );
 			
 		private:	
-			const std::vector<Base::MetaString> GetExternalWords( std::string fileName );
-			const std::vector<Base::Lyric> 
-				CreateLyrics( const std::vector<MIDI::Note>& notes, 
-					const std::vector<Base::MetaString>& words, bool ext = 0 );
+			const std::vector<Base::MetaString> 
+				GetExternalWords( std::string fileName );
+			const std::vector<Base::Lyric>	
+				CreateLyrics( const std::vector<MIDI::Note>& notes, const std::vector<Base::MetaString>& words, bool ext = 0 );
 	};
 	
 	const Vocals CreateVocals::Create( const MIDI::Track& t, std::string ext ) {

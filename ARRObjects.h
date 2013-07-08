@@ -1,11 +1,11 @@
-#ifndef _ARR_OBJECTS_
-#define _ARR_OBJECTS_
+#ifndef ARR_OBJECTS
+#define ARR_OBJECTS
 
-#ifndef _BASE_OBJECTS
+#ifndef BASE_OBJECTS
 #include "BaseObjects.h"
 #endif
 
-#ifndef _RSXML_OBJECTS
+#ifndef RSXML_OBJECTS
 #include "RSXMLObjects.h"
 #endif
 

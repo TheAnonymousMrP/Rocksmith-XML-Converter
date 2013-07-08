@@ -1,11 +1,11 @@
-#ifndef _MIDI_READ_OBJECTS_
-#define _MIDI_READ_OBJECTS_
+#ifndef MIDI_READ_OBJECTS
+#define MIDI_READ_OBJECTS
 
-#ifndef _BASE_NOTE
+#ifndef BASE_NOTE
 #include "BaseNote.h"
 #endif
 
-#ifndef _BASE_META
+#ifndef BASE_META
 #include "BaseMeta.h"
 #endif
 
@@ -27,43 +27,17 @@ namespace MIDI {
 		private:
 			unsigned int 			arbitraryDifficulty;
 	};
+
+	float ConvertDelta2Time( const int& delta, const int& division, const float& tempo ); 
 	
-	float ConvertDelta2Time( const int& delta, const int& division, const float& tempo ) 
-		{
-		float length = (float)delta / (float)division;
-		return Base::ConvertTempo2Beat( tempo ) * length;
-	}
+	unsigned int ConvertBytes2VLQ( const std::vector<unsigned char>& vlq ); 
+
+	float ConvertBytes2Float( const std::vector<unsigned char>& b ); 
 	
-	unsigned int ConvertBytes2VLQ( const std::vector<unsigned char>& vlq ) {
-		unsigned int buffer = vlq.back();
-		for(auto it = vlq.begin(); it != vlq.end() - 1; ++it) 
-			{ buffer += (unsigned int)(*it - 0x80) * pow(128,(vlq.end() - 1 - it)); }
-		return buffer;
-	}
-	
-	float ConvertBytes2Float( const std::vector<unsigned char>& b ) {
-		float buffer = 0;
-		for(auto it = b.begin(); it != b.end(); ++it) 
-			{ buffer += (int)*it * pow(256.0,(b.end() - 1 - it)); }
-		return buffer;
-	}
-	
-	float ConvertSMPTE2Time( const std::vector<unsigned char>& b, const int& division ) 
-		{
-		float time = 0;
-		// time += (b.at(0) * 60);
-		time += b.at(1);
-		time += ( b.at(2) / division );
-		time += ( ( b.at(3) / 100 ) / division );
-		return time;
-	}
-	
-	std::string ConvertBytes2String( const std::vector<unsigned char>& b ) { 
-		std::string s = "";
-		for(auto& c : b) { s += c; }
-		return s;
-	}
-	
+	float ConvertSMPTE2Time( const std::vector<unsigned char>& b, const int& division ); 
+		
+	std::string ConvertBytes2String( const std::vector<unsigned char>& b ); 
+
 	typedef Base::eMeta 		eMeta;
 	typedef Base::MetaFloat 	MetaFloat;
 	typedef Base::MetaString 	MetaString;

@@ -1,8 +1,12 @@
 #include "MIDIReaderDefault.h"
-#include "ARRCreateGuitar.cpp"
+#include "ARRCreateGuitar.h"
 #include "ARRCreateVocals.h"
 #include "RSXMLCreateGuitar.h"
-#include "RSXMLWriter.cpp"
+#include "RSXMLWriter.h"
+
+#ifndef DEBUG_STUFF
+#include "debug.h"
+#endif
 
 #include <cstring>
 #include <string>
@@ -76,9 +80,9 @@ int main(int argc, char* argv[]) {
 	MIDI::ReaderDefault midi( midiName );
 	midi.Process( arrN );
 	// midi.debug();
-	
-	auto& tracks = midi.GetTracks();
 
+	auto& tracks = midi.GetTracks();
+	
 	RSXML::Writer rsxml( midiName, title );
 	for( auto it = tracks.begin(); it != tracks.end(); ++it ) {
 		if( tracks.size() > 0 && (it - tracks.begin()) == 0 ) { }
@@ -89,9 +93,11 @@ int main(int argc, char* argv[]) {
 			ARR::Vocals v = a.Create( *it, extFileName );
 			rsxml.WriteVocals( v );
 		}
-		else {
+		else {			
 			ARR::CreateGuitar ac;
+			CLEAR
 			ARR::Guitar ag = ac.Create( *it );
+			GOTHERE
 			RSXML::Guitar rg;
 			rsxml.WriteGuitar( rg );
 		}

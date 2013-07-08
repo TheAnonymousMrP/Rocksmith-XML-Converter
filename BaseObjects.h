@@ -1,11 +1,7 @@
-#ifndef _BASE_OBJECTS_
-#define _BASE_OBJECTS_
+#ifndef BASE_OBJECTS
+#define BASE_OBJECTS
 
-#ifndef _BASE_NOTE
-#include "BaseNote.h"
-#endif
-
-#ifndef _BASS_META
+#ifndef BASS_META
 #include "BaseMeta.h"
 #endif
 
@@ -14,7 +10,7 @@
 #include <vector>
 
 namespace Base {
-	const std::array<unsigned int, NUMSTRINGS> DEFAULTINDEX { { 0, 0, 0, 0, 0, 0 } };
+	const std::array<unsigned int, NUMSTRINGS> DEFAULTINDEX = { { 0, 0, 0, 0, 0, 0 } };
 
 	class Chord : public virtual BaseObject {
 		public:
@@ -52,9 +48,8 @@ namespace Base {
 	
 	class Guitar : public Base::Arrangement {
 		public:
-			Guitar( const float& dur = 0.000f, const std::string& nam = "", 
-				const bool& bas = false ) : Arrangement( dur, nam ) 
-				{ tuning = Base::aTuning[Base::eTuning::STANDARD_E], bass = bas; };
+			Guitar( const float& dur = 0.000f, const std::string& nam = "", const bool& bas = false ) 
+				: Arrangement( dur, nam ), tuning( Base::aTuning[eTuning::STANDARD_E] ) { bass = bas; };
 			Guitar( const Guitar& g ) : Arrangement( g ), tuning( g.tuning ), 
 				bass( g.bass ), tempos( g.tempos ), timeSigs( g.timeSigs ) { };
 			

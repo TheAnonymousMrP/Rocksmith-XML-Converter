@@ -1,7 +1,7 @@
-#ifndef _MIDI_READER_
-#define _MIDI_READER_
+#ifndef READ_MIDI
+#define READ_MIDI
 
-#ifndef _MIDI_TRACK
+#ifndef MIDI_TRACK
 #include "MIDITrack.h"
 #endif
 
@@ -17,6 +17,12 @@
 /* enum eMidi { NORMAL, LOGIC, }; */
 
 namespace MIDI {
+	// Exceptions
+	class FileReadError : public std::exception {
+			virtual const char* what() const throw() 
+				{ return "The file could not be opened."; };
+		};
+
 	class Reader {
 		public:
 			Reader(std::string s = "") { fileName = s; currentTempo = DEFAULTTEMPO; };
@@ -31,7 +37,7 @@ namespace MIDI {
 			std::string					fileName;
 			float 						songLength;
 			unsigned char* 				memblock; 		// Holds the imported file.
-			std::vector<MIDI::Track>		tracks; 		// Stores processed data.
+			std::vector<MIDI::Track>	tracks; 		// Stores processed data.
 			
 			float						currentTempo;
 			unsigned int				division;
@@ -54,9 +60,9 @@ namespace MIDI {
 											MIDI::Track& track ) { return 0; };	
 				
 			// Converters and stuff
-			float 	GetCurrentTempo( std::vector<Base::Tempo>::const_iterator& tCount, 
-						const std::vector<Base::Tempo>::const_iterator& tEnd, 
-						const float& timer ) const;
+			float		 				GetCurrentTempo( std::vector<Base::Tempo>::const_iterator& tCount, 
+											const std::vector<Base::Tempo>::const_iterator& tEnd, 
+											const float& timer ) const;
 	};
 
 	void Reader::Process( unsigned int numArrs ) {
@@ -67,7 +73,6 @@ namespace MIDI {
 			division = (memblock[12] * 256) + memblock[13]; /* The time division 
 			is stored as a short in bytes 12 and 13. This is an inelegant yet 
 			accurate solution, code-reusability be damned. */
-			
 			// Single-track case.
 			if( memblock[FILETYPEBYTE] == 0 ) { ProcessDelta( HEADERLENGTH ); }
 			// Multiple tracks.
@@ -89,27 +94,27 @@ namespace MIDI {
 		std::ifstream midi;
 		std::ifstream::pos_type midiSize;
 		midiName += ".mid";
-		midi.open(midiName.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
-		if(midi.is_open()) {
-			midiSize = midi.tellg();;
-			memblock = new unsigned char[midiSize];
-			// creating a (signed) buffer so we can just transfer stuff across.
-			char* membuffer = new char[midiSize];
-			midi.seekg(0);
-			midi.read( membuffer, midiSize );
-			// Inelegant transfer of signed to unsigned.
-			for(int i = 0; i < midiSize; i++)
-				{ memblock[i] = membuffer[i]; }
-		}
-		else { std::cout << "File could not be opened." << "\n"; } 
-		midi.close();
-		
+		try {
+			midi.open( midiName.c_str(), std::ios::in | std::ios::binary | std::ios::ate );
+			if( midi.is_open() ) {
+				midiSize = midi.tellg();
+				memblock = new unsigned char[midiSize];
+				// creating a (signed) buffer so we can just transfer stuff across.
+				char* membuffer = new char[midiSize];
+				midi.seekg(0);
+				midi.read( membuffer, midiSize );
+				// Inelegant transfer of signed to unsigned.
+				for( unsigned int i = 0; i < midiSize; ++i )
+					{ memblock[i] = membuffer[i]; }
+			}
+			else { throw FileReadError(); } 
+			midi.close();
+		} catch ( std::exception& e ) { std::cout << e.what() << std::endl; }
 		return midiSize;
 	}
 	
 	unsigned int Reader::ProcessDelta( const unsigned int& startPoint ) {
 		MIDI::Track track;
-		
 		if( tracks.size() > 0 ) { 
 			track.SetTempos( tracks.at(0).GetTempos() ); 
 			track.SetMarkers( tracks.at(0).GetMetaStrings( Base::eMeta::MARKER ) );
@@ -121,11 +126,10 @@ namespace MIDI {
 		
 		std::vector<unsigned char> time;
 	
-		unsigned int trackSize = ( memblock[startPoint + 6] * 256 ) 
-			+ memblock[startPoint + 7];
+		unsigned int trackSize = ( memblock[startPoint + 6] * 256 ) + memblock[startPoint + 7];
 		unsigned int iterator = startPoint + TRACKHEADERLENGTH;
 		unsigned int endPoint = iterator + trackSize;
-		
+				
 		/* std::cout << "Track " << tracks.size() << ": Begin: " << beginPoint 
 		<< " Track size: " << trackSize << " End: " << endPoint ENDLINE */
 		while( iterator < endPoint ) {
@@ -153,12 +157,13 @@ namespace MIDI {
 			}
 		if( timer > songLength ) { songLength = timer; }
 		track.duration = timer;
+		track.NormaliseDifficulties();
+		tracks.push_back(track);
+
 		return endPoint;
 	}
 	
-	unsigned int Reader::ProcessContent( unsigned int it, float& timer, 
-		MIDI::Track& track ) 
-		{
+	unsigned int Reader::ProcessContent( unsigned int it, float& timer, MIDI::Track& track ) {
 		++it;
 		static unsigned char lastEvent;
 		unsigned char c = memblock[it]; // Read byte.
@@ -166,7 +171,7 @@ namespace MIDI {
 			// std::cout << "\n" << it;
 			++it;
 			c = memblock[it];
-			if( c == 0x2F ) { it += 2; return 0; }
+			if( c == 0x2F ) { it += 2; }
 			return ProcessMeta( it, timer, track ); 
 		} else if( c == 0xF0 || c == 0xF7 ) {
 			// SysEx. Not used by us. Because they are variable length, we're
@@ -214,10 +219,10 @@ namespace MIDI {
 			{ tempo = tCount->GetTempo(); ++tCount; }
 		return tempo;
 	}
+
+
+	
 };
-
-
-
 
 
 #endif

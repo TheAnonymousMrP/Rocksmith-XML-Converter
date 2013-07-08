@@ -1,4 +1,4 @@
-#ifndef _MIDI_READER
+#ifndef READ_MIDI
 #include "MIDIReader.h"
 #endif
 

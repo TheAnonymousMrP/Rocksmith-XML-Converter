@@ -1,4 +1,4 @@
-#ifndef _MIDI_READER
+#ifndef READ_MIDI
 #include "MIDIReader.h"
 #endif
 
@@ -14,17 +14,12 @@ namespace MIDI {
 			pulled tracks. For debug purposes. */
 		
 		private:
-			unsigned int 		ProcessNote( unsigned int it, const float& timer, 
-										MIDI::Track& track, unsigned char c = 0 );
-			unsigned int 		ProcessMeta( unsigned int it, float& timer, 
-										MIDI::Track& track );
-			unsigned int 		ProcessSysEx( unsigned int it, const float& timer, 
-										MIDI::Track& track ) { return 0; };	
+			unsigned int 		ProcessNote( unsigned int it, const float& timer, MIDI::Track& track, unsigned char c = 0 );
+			unsigned int 		ProcessMeta( unsigned int it, float& timer, MIDI::Track& track );
+			unsigned int 		ProcessSysEx( unsigned int it, const float& timer, MIDI::Track& track ) { return 0; };	
 	};
 	
-	unsigned int ReaderDefault::ProcessNote( unsigned int it, const float& timer, 
-		MIDI::Track& track, unsigned char c ) 
-		{
+	unsigned int ReaderDefault::ProcessNote( unsigned int it, const float& timer, MIDI::Track& track, unsigned char c ) {
 		// 'c' is there as a safety net for the no-event-byte situation.
 		unsigned char channel, pitch, velocity;
 		if( c != 0 ) { channel = c; }
@@ -60,9 +55,7 @@ namespace MIDI {
 		return it;
 	}
 	
-	unsigned int ReaderDefault::ProcessMeta( unsigned int it, float& timer, 
-		MIDI::Track& track ) 
-		{
+	unsigned int ReaderDefault::ProcessMeta( unsigned int it, float& timer, MIDI::Track& track ) {
 		unsigned int type = it;
 		// The next byte contains the length of the proceeding section.
 		++it;
@@ -118,8 +111,7 @@ namespace MIDI {
 			// SMPTE offset.
 			case 0x54: timer += ConvertSMPTE2Time(contents, division); break; 
 			case 0x58: { // Time Signature. Good to know at some point.
-				std::array<unsigned int, 4> i { { contents.at(0), contents.at(1), 
-					contents.at(2), contents.at(3) } };
+				std::array<unsigned int, 4> i = { { contents.at(0), contents.at(1), contents.at(2), contents.at(3) } };
 				TimeSig time( timer, i );
 				/* time.num = contents.at(0);
 				time.denom = contents.at(1);

@@ -1,5 +1,5 @@
-#ifndef _BASE_
-#define _BASE_
+#ifndef BASE
+#define BASE
 
 #include <string>
 #include <vector>

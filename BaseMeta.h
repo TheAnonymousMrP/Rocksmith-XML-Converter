@@ -1,7 +1,7 @@
-#ifndef _BASE_META_
-#define _BASE_META_
+#ifndef BASE_META
+#define BASE_META
 
-#ifndef _BASE_NOTE
+#ifndef BASE_NOTE
 #include "BaseNote.h"
 #endif
 
@@ -84,11 +84,11 @@ namespace Base {
 			Meta( const eMeta& typ = eMeta::SPECIAL, const float& tim = 0.000f ) 
 				: Base::BaseObject( tim ) { type = typ; };
 			
-			const eMeta&	GetType() const { return type; }; 
+			const eMeta&			GetType() const { return type; }; 
 			
 		protected:
-			eMeta			type;
-			float			time;	
+			eMeta					type;
+			float					time;	
 	};
 	
 	class MetaFloat : public Base::Meta {
@@ -97,10 +97,10 @@ namespace Base {
 				const float& val = 0.000f ) : Base::Meta( typ, tim )
 				{ value = val; };
 				
-			const float&	GetFloat() const { return value; };
+			const float&			GetFloat() const { return value; };
 			
 		private:
-			float		value;
+			float					value;
 	
 	};
 	
@@ -110,10 +110,10 @@ namespace Base {
 				const std::string& tex = "" ) : Base::Meta( typ, tim )
 				{ text = tex; };
 				
-			const std::string&	GetString() const { return text; };
+			const std::string&		GetString() const { return text; };
 			
 		protected:
-			std::string		text;
+			std::string				text;
 	};
 	
 	class MetaUInt : public Base::Meta {
@@ -122,10 +122,10 @@ namespace Base {
 				const unsigned int& num = 0 ) : Base::Meta( typ, tim )
 				{ number = num; };
 				
-			const unsigned int&	GetUInt() const { return number; };
+			const unsigned int&		GetUInt() const { return number; };
 			
 		private:
-			unsigned int	number;
+			unsigned int			number;
 	
 	};
 	
@@ -134,22 +134,22 @@ namespace Base {
 			Tempo( const float& tim = 0.000f, const float& val = 0.000f ) 
 				: Base::Meta( Base::eMeta::TEMPO, tim ), value( val ) { };
 				
-			const float&	GetTempo() const { return value; };
+			const float&			GetTempo() const { return value; };
+			float					Convert2Beat() const { return ONEMINUTE / value; };
 			
 		private:
-			float		value;
+			float					value;
 	
 	};
 	
-	const std::array<unsigned int, 4> DEFAULTTIMESIG { 
+	const std::array<unsigned int, 4> DEFAULTTIMESIG = { 
 		{ DEFAULTTIMESIGNUM, DEFAULTTIMESIGDENOM, 
 		DEFAULTTIMESIGPULSE, DEFAULTTIMESIG32ND } 
 	};
 	
 	class TimeSig : public Base::Meta {
 		public:
-			TimeSig( const float& tim = 0.000f, 
-				const std::array<unsigned int, 4>& list = DEFAULTTIMESIG ) 
+			TimeSig( const float& tim = 0.000f, const std::array<unsigned int, 4>& list = DEFAULTTIMESIG ) 
 				: Base::Meta( Base::eMeta::TIMESIG, tim ) { 
 				numerator = list[0];
 				denominator = list[1]; 
@@ -185,11 +185,9 @@ namespace Base {
 	class MetaException : public std::exception {
 		virtual const char* what() const throw() 
 			{ return "Invalid eMeta type for context."; };
-	} metaException;
-	
-	float ConvertTempo2Beat( const float& tempo ) {
-		return ONEMINUTE / tempo;
 	};
+	
+	
 };
 
 #endif

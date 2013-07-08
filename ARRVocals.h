@@ -1,7 +1,7 @@
-#ifndef _ARR_VOCALS_
-#define _ARR_VOCALS_
+#ifndef ARR_VOCALS
+#define ARR_VOCALS
 
-#ifndef _BASE_NOTE
+#ifndef BASE_NOTE
 #include "BaseNote.h"
 #endif
 
@@ -11,8 +11,7 @@
 namespace ARR {
 	class Vocals {
 		public:
-			Vocals( const std::string& nam, std::vector<Base::Lyric>& lyr ) 
-				{ name = nam; lyrics = lyr; };
+			Vocals( const std::string& nam, std::vector<Base::Lyric>& lyr ) { name = nam; lyrics = lyr; };
 			Vocals(const Vocals& a) : name( a.name ), lyrics( a.lyrics ) { };
 			
 			const Base::Lyric& 				GetLyric( unsigned int i ) const 

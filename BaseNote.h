@@ -1,5 +1,5 @@
-#ifndef _BASE_NOTE_
-#define _BASE_NOTE_
+#ifndef BASE_NOTE
+#define BASE_NOTE
 
 #include <array>
 #include <string>
@@ -23,12 +23,12 @@ namespace Base {
 			Note( const float& tim = 0.000f, const unsigned char& pit = 0x00 ) 
 				: BaseObject( tim ) { pitch = pit; duration = 0.000f; };
 				
-			float 			duration;
+			float 					duration;
 	
 			const unsigned char& 	GetPitch() const { return pitch; };
 	
 		protected:
-			unsigned char 	pitch;
+			unsigned char 			pitch;
 	};
 	
 	typedef struct {
@@ -38,14 +38,16 @@ namespace Base {
 	
 	enum eTuning {
 		STANDARD_E,
-		STANDARD_D,
 		DROP_D,
+		STANDARD_EB,
+		OPEN_G
 	};
 	
-	const std::array<Tuning, 10> aTuning { { 
+	const std::array<Tuning, 10> aTuning = { { 
 			{ "Standard E", { { 52, 57, 62, 67, 71, 76 } } },
-			{ "Standard D", { { 50, 55, 60, 65, 69, 74 } } },
-			{ "Drop D", { { 50, 57, 62, 67, 71, 76 } } }
+			{ "Drop D", { { 50, 57, 62, 67, 71, 76 } } },
+			{ "Standard Eb", { { 51, 56, 61, 66, 70, 75 } } },
+			{ "Open G", { { 50, 55, 62, 67, 71, 74 } } },
 		} };
 	
 	class GuitarNote : public Base::Note {
@@ -54,28 +56,23 @@ namespace Base {
 				const unsigned char& str = 0x00, const unsigned int& dif = 0x00 ) 
 				: Base::Note( tim, pit ) { string = str; bend = 0.000f; slide = 0; };
 		
-			unsigned char		normalisedDifficulty;
-			float				bend;
-			unsigned char		slide;
+			unsigned char			normalisedDifficulty;
+			float					bend;
+			unsigned char			slide;
 		
-			const unsigned char& GetFret() const { return fret; }
-			const unsigned char& GetString() const { return string; };
+			const unsigned char&	GetFret() const { return fret; }
+			const unsigned char&	GetString() const { return string; };
 			
-			const bool			IsBend() const { 
-									if( bend > 0 ) { return true; } 
-									else { return false; }
-								};
+			const bool				IsBend() const { 
+										if( bend > 0 ) { return true; } 
+										else { return false; }
+									};
 			
-			void				SetFret() { fret = tuning.pitch[string] - pitch; }
-			
-			static void			SetTuning( const Tuning& tun 
-									= aTuning[eTuning::STANDARD_E] ) { tuning = tun; };
+			void					SetFret( const Tuning& tun = aTuning[eTuning::STANDARD_E] ) { fret = tun.pitch[string] - pitch; }
 			
 		protected:
-			unsigned char		fret;
-			unsigned char		string;
-			
-			static Base::Tuning	tuning;
+			unsigned char			fret;
+			unsigned char			string;
 	};
 	
 	struct Lyric : public Base::Note {

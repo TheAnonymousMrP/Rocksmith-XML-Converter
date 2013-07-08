@@ -1,11 +1,11 @@
-#ifndef _MIDI_TRACK_
-#define _MIDI_TRACK_
+#ifndef MIDI_TRACK
+#define MIDI_TRACK
 
-#ifndef _MIDI_OBJECTS
+#ifndef MIDI_OBJECTS
 #include "MIDIObjects.h"
 #endif
 
-#ifndef _BASE_META
+#ifndef BASE_META
 #include "BaseMeta.h"
 #endif
 
@@ -15,7 +15,7 @@
 namespace MIDI {
 	class Track {
 		public:
-			Track() { };
+			Track() { name = ""; duration = 0; maxDifficulty = 0; };
 			
 			RSXML::eTrackType	type;
 			std::string			name;
@@ -27,7 +27,24 @@ namespace MIDI {
 					};
 			void 	AddAnchor( const MetaUInt& meta ) { anchors.push_back( meta ); };
 			void 	AddBend( const MetaFloat& meta ) { bends.push_back( meta ); };
-			void 	AddMetaString( const MetaString& meta, const eMeta& type );
+			void 	AddMetaString( const MetaString& meta, const eMeta& type ) {
+						switch( type ) {
+							case eMeta::CHORD: chords.push_back( meta ); break;
+							case eMeta::EVENT: events.push_back( meta ); break;
+							case eMeta::LYRICS: lyrics.push_back( meta ); break;
+							case eMeta::MARKER: markers.push_back( meta ); break;
+							case eMeta::PHRASE: phrases.push_back( meta ); break;
+							case eMeta::TECHNIQUE: techniques.push_back( meta ); break;
+							case eMeta::KEYSIG: 
+							case eMeta::TUNING: 
+							case eMeta::SPECIAL: special.push_back( meta ); break;
+							case eMeta::ANCHOR: 
+							case eMeta::BEND:
+							case eMeta::TEMPO: 
+							case eMeta::TIMESIG:
+							default: throw Base::MetaException(); break;
+						}
+			};
 			void 	AddTempo( const Tempo& meta ) { tempos.push_back( meta ); };
 			void 	AddTimeSig( const TimeSig& meta ) { timeSigs.push_back( meta ); };
 			
@@ -39,20 +56,58 @@ namespace MIDI {
 											};
 			const std::vector<MetaUInt>& 	GetAnchors() const { return anchors; };
 			const std::vector<MetaFloat>& 	GetBends() const { return bends; };
-			const std::vector<MetaString>& 	GetMetaStrings( const eMeta& type ) const;
+			const std::vector<MetaString>& 	GetMetaStrings( const eMeta& type ) const {
+												switch( type ) {
+													case eMeta::CHORD: return chords; break;
+													case eMeta::EVENT: return events; break;
+													case eMeta::LYRICS: return lyrics; break;
+													case eMeta::MARKER: return markers; break;
+													case eMeta::PHRASE: return phrases; break;
+													case eMeta::TECHNIQUE: return techniques; break;
+													case eMeta::KEYSIG: 
+													case eMeta::TUNING: 
+													case eMeta::SPECIAL: return special; break;
+													case eMeta::ANCHOR: 
+													case eMeta::BEND:
+													case eMeta::TEMPO: 
+													case eMeta::TIMESIG:
+													default: throw Base::MetaException(); break;
+												}
+											};
 			const std::vector<Tempo>&		GetTempos() const { return tempos; };
 			const std::vector<TimeSig>&		GetTimeSigs() const { return timeSigs; };
 			
 			/* Because tempo and marker events are in the first, note-less track of the 
 			MIDI file, further tracks need to copy these vectors. Further investigation 
 			should be made into the plausibility of making them static, but I suspect this
-			would have an unintended effect if somewhere down the line multiple files are
+			would have an unintended effect somewhere down the line if multiple files are
 			dealt with. */
-			void 	SetMarkers( const std::vector<MetaString>& mar ) 
-						{ markers = mar; };
+			void 	SetMarkers( const std::vector<MetaString>& mar ) { markers = mar; };
 			void 	SetTempos( const std::vector<Tempo>& tem ) { tempos = tem; };
 			
-			void 	NormaliseDifficulties();
+			void 	NormaliseDifficulties() {
+						std::vector<unsigned int> difs;
+						bool match = false;
+						for( const MIDI::Note& n : noteOn ) {
+							match = false;
+							for( const unsigned int& i : difs ) {
+								if( n.GetArbitraryDifficulty() == i ) { match = true; break; }
+							}
+							if(!match) { difs.push_back( n.GetArbitraryDifficulty() ); }
+						}
+						maxDifficulty = difs.size()-1;
+	
+						// Sorts the vector into order.
+						sort(difs.begin(),difs.end());
+		
+						for( MIDI::Note& n : noteOn ) { 
+							// Set a normalised difficulty.
+							for( auto it = difs.begin(); it != difs.end(); ++it ) {
+								if( n.GetArbitraryDifficulty() == *it ) 
+									{ n.normalisedDifficulty = ( it - difs.begin() ); break; }
+							}
+						}
+					};
 			
 		private:
 			
@@ -73,68 +128,6 @@ namespace MIDI {
 			std::vector<Tempo> 			tempos; 	// Tempo changes.
 			std::vector<TimeSig> 		timeSigs; 	// Time Signature changes.
 	};
-	
-	void Track::AddMetaString( const MetaString& meta, const eMeta& type ) {
-		switch( type ) {
-			case eMeta::CHORD: chords.push_back( meta ); break;
-			case eMeta::EVENT: events.push_back( meta ); break;
-			case eMeta::LYRICS: lyrics.push_back( meta ); break;
-			case eMeta::MARKER: markers.push_back( meta ); break;
-			case eMeta::PHRASE: phrases.push_back( meta ); break;
-			case eMeta::TECHNIQUE: techniques.push_back( meta ); break;
-			case eMeta::KEYSIG: 
-			case eMeta::TUNING: 
-			case eMeta::SPECIAL: special.push_back( meta ); break;
-			case eMeta::ANCHOR: 
-			case eMeta::BEND:
-			case eMeta::TEMPO: 
-			case eMeta::TIMESIG:
-			default: throw Base::metaException; break;
-		}
-	}
-	
-	const std::vector<MetaString>& Track::GetMetaStrings( const eMeta& type ) const {
-		switch( type ) {
-			case eMeta::CHORD: return chords; break;
-			case eMeta::EVENT: return events; break;
-			case eMeta::LYRICS: return lyrics; break;
-			case eMeta::MARKER: return markers; break;
-			case eMeta::PHRASE: return phrases; break;
-			case eMeta::TECHNIQUE: return techniques; break;
-			case eMeta::KEYSIG: 
-			case eMeta::TUNING: 
-			case eMeta::SPECIAL: return special; break;
-			case eMeta::ANCHOR: 
-			case eMeta::BEND:
-			case eMeta::TEMPO: 
-			case eMeta::TIMESIG:
-			default: throw Base::metaException; break;
-		}
-	}
-	
-	void Track::NormaliseDifficulties() {
-		std::vector<unsigned int> difs;
-		bool match = false;
-		for( const MIDI::Note& n : noteOn ) {
-			match = false;
-			for( const unsigned int& i : difs ) {
-				if( n.GetArbitraryDifficulty() == i ) { match = true; break; }
-			}
-			if(!match) { difs.push_back( n.GetArbitraryDifficulty() ); }
-		}
-		maxDifficulty = difs.size()-1;
-	
-		// Sorts the vector into order.
-		sort(difs.begin(),difs.end());
-		
-		for( MIDI::Note& n : noteOn ) { 
-			// Set a normalised difficulty.
-			for( auto it = difs.begin(); it != difs.end(); ++it ) {
-				if( n.GetArbitraryDifficulty() == *it ) 
-					{ n.normalisedDifficulty = ( it - difs.begin() ); break; }
-			}
-		}
-	}
 };
 
 #endif

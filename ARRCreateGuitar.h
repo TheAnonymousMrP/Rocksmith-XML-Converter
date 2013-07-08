@@ -1,11 +1,11 @@
-#ifndef _ARR_CREATE_GUITAR_
-#define _ARR_CREATE_GUITAR_
+#ifndef ARR_CREATE_GUITAR
+#define ARR_CREATE_GUITAR
 
-#ifndef _ARR_GUITAR_
+#ifndef ARR_GUITAR
 #include "ARRGuitar.h"
 #endif
 
-#ifndef _MIDI_TRACK
+#ifndef MIDI_TRACK
 #include "MIDITrack.h"
 #endif
 
@@ -29,20 +29,14 @@ namespace ARR {
 			void 					HandleSpecialMetas( ARR::Guitar& g );
 			std::vector<ARR::Note>	ConvertMIDI2ARRNotes( std::vector<MIDI::Note> notes );
 			void 					SetTechniques( std::vector<ARR::Note>& notes );
-			const ARR::Difficulty	CreateDifficulty( const unsigned int& dif, 
-										const std::vector<ARR::Note>& notes,
-										std::vector<ARR::Chord>& chords );
-			const ARR::Chord		CreateChord( const std::vector<ARR::Note> notes, 
-										const unsigned int& noteIt, 
-										const unsigned int& chordSize );
+			const ARR::Difficulty	CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords );
+			const ARR::Chord		CreateChord( const std::vector<ARR::Note> notes, const unsigned int& noteIt, const unsigned int& chordSize );
 			
 			// Process Methods
 			void 					createAnchors();
 			Difficulty 				createDifficulty(unsigned int i, std::ostream& file);
-				Chord 				createChord(const std::vector<Note>& nSource, 
-										std::vector<Note>::iterator it, int chordSize);
-				Chord 				createChord2( const std::vector<Note>& notes, 
-										const std::vector<unsigned int>& indexes );
+			Chord 					createChord(const std::vector<Note>& nSource, std::vector<Note>::iterator it, int chordSize);
+			Chord 					createChord2( const std::vector<Note>& notes, const std::vector<unsigned int>& indexes );
 		
 			void 					createPhrases();
 			void 					createSections();	
