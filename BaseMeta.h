@@ -1,10 +1,6 @@
 #ifndef BASE_META
 #define BASE_META
 
-#ifndef BASE_NOTE
-#include "BaseNote.h"
-#endif
-
 #include <array>
 #include <string>
 #include <exception>
@@ -79,16 +75,17 @@ namespace Base {
 			case eMeta::TIMESIG:
 		} */
 
-	class Meta : public virtual Base::BaseObject {
+	class Meta {
 		public:
 			Meta( const eMeta& typ = eMeta::SPECIAL, const float& tim = 0.000f ) 
-				: Base::BaseObject( tim ) { type = typ; };
+				: time( tim ), type( typ ) { };
 			
+			const float&			GetTime() const { return time; };
 			const eMeta&			GetType() const { return type; }; 
 			
 		protected:
+			float					time;
 			eMeta					type;
-			float					time;	
 	};
 	
 	class MetaFloat : public Base::Meta {

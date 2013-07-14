@@ -28,7 +28,7 @@ namespace MIDI {
 			unsigned int 			arbitraryDifficulty;
 	};
 
-	float ConvertDelta2Time( const int& delta, const int& division, const float& tempo ); 
+	float ConvertDelta2Time( const unsigned int& delta, const unsigned int& division, const float& tempo ); 
 	
 	unsigned int ConvertBytes2VLQ( const std::vector<unsigned char>& vlq ); 
 

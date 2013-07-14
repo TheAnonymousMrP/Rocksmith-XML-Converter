@@ -5,6 +5,10 @@
 #include "MIDITrack.h"
 #endif
 
+#ifndef DEBUG_STUFF
+#include "debug.h"
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -13,6 +17,7 @@
 #define HEADERLENGTH 14
 #define TRACKHEADERLENGTH 8
 #define MAXDELTA 4 // VLQ delta times may only encompass 4 bytes
+#define MIDICONTROLLENGTH 3 // Length of MIDI Control Events.
 
 /* enum eMidi { NORMAL, LOGIC, }; */
 
@@ -81,7 +86,8 @@ namespace MIDI {
 				int filePos = ProcessDelta( HEADERLENGTH );
 				bool moarTrack = true;
 				while( filePos < fileSize && moarTrack ) {
-					filePos = ProcessDelta(filePos);
+					std::cout << "New Track " << tracks.size() ENDLINE
+					filePos = ProcessDelta( filePos );
 					if( numArrs > 0 && tracks.size() - 1 >= numArrs )
 						{ moarTrack = false; } 
 				}
@@ -92,7 +98,8 @@ namespace MIDI {
 	unsigned int Reader::GetMIDI( std::string midiName ) {
 		// Taking the content from a MIDI file.
 		std::ifstream midi;
-		std::ifstream::pos_type midiSize;
+		unsigned int midiSize = 0;
+
 		midiName += ".mid";
 		try {
 			midi.open( midiName.c_str(), std::ios::in | std::ios::binary | std::ios::ate );
@@ -104,8 +111,12 @@ namespace MIDI {
 				midi.seekg(0);
 				midi.read( membuffer, midiSize );
 				// Inelegant transfer of signed to unsigned.
+
 				for( unsigned int i = 0; i < midiSize; ++i )
 					{ memblock[i] = membuffer[i]; }
+
+				for( unsigned int i = 0; i < midiSize; ++i ) { memblock[i] = membuffer[i]; }	
+
 			}
 			else { throw FileReadError(); } 
 			midi.close();
@@ -119,6 +130,7 @@ namespace MIDI {
 			track.SetTempos( tracks.at(0).GetTempos() ); 
 			track.SetMarkers( tracks.at(0).GetMetaStrings( Base::eMeta::MARKER ) );
 		}
+		
 		std::vector<Base::Tempo>::const_iterator tCount = track.GetTempos().begin();
 		std::vector<Base::Tempo>::const_iterator tEnd = track.GetTempos().end();
 		currentTempo = DEFAULTTEMPO;
@@ -132,6 +144,7 @@ namespace MIDI {
 				
 		/* std::cout << "Track " << tracks.size() << ": Begin: " << beginPoint 
 		<< " Track size: " << trackSize << " End: " << endPoint ENDLINE */
+		int debugIterator = 0;
 		while( iterator < endPoint ) {
 			unsigned char c = memblock[iterator]; // Read byte.
 			time.push_back( c );		
@@ -145,16 +158,15 @@ namespace MIDI {
 			}
 			// Should be the last delta-time byte
 			else if( c < 0x80 ) {
-				int delta = ConvertBytes2VLQ( time );
-				if( tracks.size() > 0 ) { 
-					currentTempo = GetCurrentTempo( tCount, tEnd, timer );
-				}
+				unsigned int delta = ConvertBytes2VLQ( time );
+				if( tracks.size() > 0 ) { currentTempo = GetCurrentTempo( tCount, tEnd, timer ); }
 				timer += ConvertDelta2Time( delta, division, currentTempo );
+				// std::cout << ++debugIterator << "\tTempo: " << currentTempo << "\tDelta: " << delta << "\tTime: " << timer ENDLINE
 				time.clear();
 				
 				iterator = ProcessContent( iterator, timer, track );
-				} 
-			}
+			} 
+		}
 		if( timer > songLength ) { songLength = timer; }
 		track.duration = timer;
 		track.NormaliseDifficulties();
@@ -168,7 +180,6 @@ namespace MIDI {
 		static unsigned char lastEvent;
 		unsigned char c = memblock[it]; // Read byte.
 		if ( c == 0xFF ) { 
-			// std::cout << "\n" << it;
 			++it;
 			c = memblock[it];
 			if( c == 0x2F ) { it += 2; }
@@ -178,12 +189,10 @@ namespace MIDI {
 			// kind of fucked until I bother do this shit.
 			// processSysEx( it, timer, track );
 		} else {
-			// std::cout << "\t" << it;
 			if ( c >= 0x80 && c < 0xA0 ) {
 				// Note-on and -off messages.
 				lastEvent = c;
 				return ProcessNote( it, timer, track );
-				
 			} else if( c >= 0xB0 && c < 0xC0 ) {
 				/* Controller events. Don't really know how this will affect
 				our charts but they may have implications down the line. */
@@ -194,7 +203,7 @@ namespace MIDI {
 				a direct line to string-bend events. An intermediary for now 
 				is using the 'T' text event to specify bends. */
 				lastEvent = c;
-				return it += 2;
+				return it += MIDICONTROLLENGTH;
 			} else if( c < 0x80 ) {
 				/* This one requires an explanation. The 4-bit event-type sequence 
 				doesn't show up if there is a zero-value delta-time AND the 
@@ -202,7 +211,9 @@ namespace MIDI {
 				well-established pattern off. Fucking 80's. */
 				if( lastEvent >= 0x80 && lastEvent < 0xA0 ) { 
 					return ProcessNote( it, timer, track, lastEvent );
-				} else if ( lastEvent >= 0xE0 && lastEvent < 0xF0 ) { }
+				} else if ( lastEvent >= 0xE0 && lastEvent < 0xF0 ) { 
+					return it += MIDICONTROLLENGTH - 1;
+				}
 			}
 		} /* else {
 			std::cout << "BORK BORK BORK at: " 
@@ -215,14 +226,9 @@ namespace MIDI {
 		const std::vector<Base::Tempo>::const_iterator& tEnd, const float& timer ) const
 		{
 		float tempo = currentTempo;
-		if( tCount != tEnd && timer >= tCount->GetTime() ) 
-			{ tempo = tCount->GetTempo(); ++tCount; }
+		if( tCount != tEnd && timer >= tCount->GetTime() ) { tempo = tCount->GetTempo(); ++tCount; }
 		return tempo;
 	}
-
-
-	
-};
-
+};	
 
 #endif

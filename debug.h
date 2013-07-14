@@ -9,7 +9,6 @@
 #define WOOP std::cout << "WOOP WOOP! Problem at this point!\n";
 
 namespace Debug {
-	
 };
 
 #endif

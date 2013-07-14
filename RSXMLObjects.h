@@ -35,26 +35,26 @@ namespace RSXML {
 			const std::string	ToXML() const;
 	};
 	
-	class LevelObject : public virtual Base::BaseObject {
+	class LevelObject {
 		public:
-			LevelObject( const float& tim = 0.000f, const unsigned int& ind = 0 ) 
-				: Base::BaseObject( tim ), index( ind ) { };
+			LevelObject( const unsigned int& ind = 0 ) 
+				: index( ind ) { };
 			
 			const unsigned int& 	GetIndex() const { return index; };
-			
-		private:
+
+		protected:
 			unsigned int			index;
 	};	
 	
-	class Note : public Base::GuitarNote, public LevelObject { 
+	class Note : virtual public Base::GuitarNote, virtual public LevelObject { 
 		public:
 			Note( const float& tim = -1.0, const unsigned char& str = 0x00, 
 				const unsigned char& pit = 0x00, const unsigned char& dif = 0x00,
 				const unsigned int& in = 0 ) 
-				: Base::GuitarNote( tim, pit, str, dif ), LevelObject( tim, in )
+				: Base::GuitarNote( tim, pit, str, dif ), LevelObject(  in )
 				{ for( auto& b : values ) { b = false; } };
 			Note( const Base::GuitarNote& note, const unsigned int& index ) 
-				: Base::GuitarNote( note ), LevelObject( note.GetTime(), index ) { };
+				: Base::GuitarNote( note ), LevelObject( index ) { };
 			
 			enum eValues {
 				ACCENT,
@@ -90,10 +90,9 @@ namespace RSXML {
 	
 	class Chord : public Base::Chord, public LevelObject, public Template {
 		public:
-			Chord( const float& tim = 0.000f, 
-				const std::array<unsigned int, 6>& nIn = Base::DEFAULTINDEX,
+			Chord( const float& tim = 0.000f, const std::array<unsigned int, 6>& nIn = Base::DEFAULTINDEX,
 				const unsigned int& i = 0, const unsigned int& in = 0 ) 
-				: Base::Chord( tim, nIn ), LevelObject( tim, in ), Template( i )  
+				: Base::Chord( tim, nIn ), LevelObject( in ), Template( i )  
 				{ values.fill( false ); };
 		
 			enum eValues {
@@ -117,36 +116,40 @@ namespace RSXML {
 		public:
 			Anchor( const float& tim = 0.000f, const unsigned char& fre = 1,
 				const float& wid = 4.000f, const unsigned int& in = 0 ) 
-				: LevelObject( tim, in ), fret( fre ), width( wid ) { };
-				
-			const unsigned char&				GetFret() const { return fret; };
-			const float&						GetWidth() const { return width; };
+				: LevelObject( in ), time( tim ), fret( fre ), width( wid ) { };
 			
-			const std::string					ToXML() const;
+			const float&					GetTime() const { return time; };	
+			const unsigned char&			GetFret() const { return fret; };
+			const float&					GetWidth() const { return width; };
+			
+			const std::string				ToXML() const;
 			
 		private:
-			unsigned char						fret;
-			float								width;
+			float							time;
+			unsigned char					fret;
+			float							width;
 	};
 	
 	class HandShape : public LevelObject, public Template { 
 		public:
 			HandShape( const float& tim = -1.0, const unsigned int& i = 0, 
 				const float& dur = 0.000f, const unsigned int& in = 0 )
-				: LevelObject( tim, in ), Template( i ), duration( dur ) { };
-				
+				: LevelObject( in ), Template( i ), time( tim ), duration( dur ) { };
+			
+			const float&					GetTime() const { return time; };	
 			const float&					GetDuration() const { return duration; };
 			
 			const std::string				ToXML() const;	
 
 		private:
+			float							time;
 			float							duration;
 	};
 	
 	class Difficulty : public LevelObject {
 		public:
 			Difficulty( const float& len = 0.000f, const unsigned int& i = 0, 
-				const bool& trans = false ) : LevelObject( 0.000f, i ), length( len ),
+				const bool& trans = false ) : LevelObject( i ), length( len ),
 				transcription( trans ) { };
 			
 			const float& GetLength() const { return length; };
@@ -166,13 +169,13 @@ namespace RSXML {
 			// Too 'complex' to write ToXML(). Use Writer::WriteDifficulty() instead.
 
 		private:
-			float						length;
-			bool						transcription;
+			float							length;
+			bool							transcription;
 		
-			std::vector<unsigned int>	notesIndex;
-			std::vector<unsigned int>	chordsIndex;
-			std::vector<unsigned int>	anchorsIndex;
-			std::vector<unsigned int>	handsIndex;
+			std::vector<unsigned int>		notesIndex;
+			std::vector<unsigned int>		chordsIndex;
+			std::vector<unsigned int>		anchorsIndex;
+			std::vector<unsigned int>		handsIndex;
 	};
 };
 

@@ -32,14 +32,22 @@ namespace ARR {
 		
 		std::vector<ARR::Chord> chords;
 		std::vector<ARR::Difficulty> difficulties;
+
 		WOOP
 		std::cout << track.GetMaxDifficulty() ENDLINE
+
+		
+
 		for( unsigned int i = 0; i <= track.GetMaxDifficulty(); ++i ) {
 			Difficulty d = CreateDifficulty( i, notes, chords );
 			difficulties.push_back( d );
 		};
+
 		GOTHERE
 		
+
+				
+
 		g.SetDifficulties( difficulties );
 		g.SetNotes( notes );
 		g.SetChords( chords );
@@ -140,7 +148,11 @@ namespace ARR {
 	
 	const Difficulty CreateGuitar::CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) {
 		Difficulty d;
+
 		GOTHERE
+
+		
+
 		std::vector<unsigned int> index;
 		std::vector<unsigned int> notesIndex;
 		std::vector<unsigned int> chordsIndex;
@@ -151,21 +163,39 @@ namespace ARR {
 		while( noteIt < index.end() ) {
 			unsigned int chordSize = 0;
 			auto chordIt = noteIt + 1;
+
 			while( chordIt != index.end() && 
 				notes.at( *chordIt ).GetTime() == notes.at( *noteIt ).GetTime() ) 
 				{ 
 				++chordSize;
 				++chordIt;
 			}	
+
+			WOOP
+			std::cout << "NoteIt: " << noteIt - index.begin() << " Note Time: " << notes.at( *noteIt ).GetTime() ENDLINE
+			while( chordIt != index.end() && notes.at( *chordIt ).GetTime() == notes.at( *noteIt ).GetTime() ) { 
+				// std::cout << "Chord Size: " << chordSize << " ChordIt: " << chordIt - index.begin() << " Note Time: " << notes.at( *chordIt ).GetTime() ENDLINE
+				++chordSize;
+				++chordIt;
+			}	
+			std::cout << "NoteIt: " << noteIt - index.begin() << " ChordIt: " << chordIt - index.begin() << " Chord Size: " << chordSize ENDLINE
+
 			if( chordSize == 0 ) { notesIndex.push_back( *noteIt ); }
 			else {
 				chordsIndex.push_back( chords.size() );
 				// Should probably be separated into a separate method.
 				float time = notes.at( *noteIt ).GetTime();
 				std::array<unsigned int, NUMSTRINGS> indexes = Base::DEFAULTINDEX;
+
 				for( auto it = noteIt; it <= noteIt + chordSize; ++it ) {
 					indexes[it - noteIt] = *it;
 				}
+
+				WOOP
+				std::cout << chordSize ENDLINE
+				for( auto it = noteIt; it <= noteIt + chordSize; ++it ) { indexes[it - noteIt] = *it; }
+				GOTHERE
+
 				// Finding a name for the chord.
 				std::string name;
 				bool match = false;
@@ -185,7 +215,11 @@ namespace ARR {
 			}
 			noteIt += chordSize + 1;
 		} 
+
 		
+
+		GOTHERE
+
 		d.SetNotesIndex( notesIndex );
 		d.SetChordsIndex( chordsIndex );
 		return d;

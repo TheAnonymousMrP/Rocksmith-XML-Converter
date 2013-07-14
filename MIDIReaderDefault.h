@@ -4,8 +4,6 @@
 
 #include <array>
 
-#define MIDICONTROLLENGTH 3 // Length of MIDI Control Events.
-
 namespace MIDI {
 	class ReaderDefault : public MIDI::Reader {
 		public:
@@ -30,7 +28,7 @@ namespace MIDI {
 		if(channel >= 0x90)	{ string = channel - 0x90; }
 		else if(channel >= 0x80) { string = channel - 0x80; }
 		MIDI::Note n( timer, pitch, string, velocity );
-		
+
 		/* Putting it into a vector.
 		
 		Logic, at the very least, ignores the dedicated
@@ -51,8 +49,7 @@ namespace MIDI {
 		std::cout << "\tChannel: " << (int)channel - 0x80 << " String: " << string 
 		<< " Pitch: " << (int)pitch << " Velocity: " << (int)velocity 
 		<< " Time: " << timer << " Tempo: " << currentTempo; */
-		
-		return it;
+		return ++it;
 	}
 	
 	unsigned int ReaderDefault::ProcessMeta( unsigned int it, float& timer, MIDI::Track& track ) {
@@ -75,6 +72,7 @@ namespace MIDI {
 					case 'P': metaType = eMeta::PHRASE; break;
 					case 'T': metaType = eMeta::TECHNIQUE; break;
 					case 'X': metaType = eMeta::SPECIAL; break;
+					default: metaType = eMeta::SPECIAL; break;
 				}	
 				std::vector<unsigned char> contentsMod;
 				for( auto jt = contents.begin() + 1; jt != contents.end(); ++jt ) 
@@ -105,7 +103,7 @@ namespace MIDI {
 			case 0x51: { // Set Tempo.
 				float t = ConvertBytes2Float(contents);
 				currentTempo = ONEMINUTEMICRO / t; 
-				Tempo m( timer, t );
+				Tempo m( timer, currentTempo );
 				track.AddTempo( m );
 			} break;
 			// SMPTE offset.

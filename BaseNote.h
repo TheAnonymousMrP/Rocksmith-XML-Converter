@@ -18,16 +18,17 @@ namespace Base {
 			float			time;
 	};
 
-	class Note : public virtual BaseObject {
+	class Note {
 		public:
 			Note( const float& tim = 0.000f, const unsigned char& pit = 0x00 ) 
-				: BaseObject( tim ) { pitch = pit; duration = 0.000f; };
+				: time( tim ), pitch( pit ), duration( 0.000f ) { };
 				
+			const float&			GetTime() const { return time; };
 			float 					duration;
-	
 			const unsigned char& 	GetPitch() const { return pitch; };
 	
 		protected:
+			float					time;
 			unsigned char 			pitch;
 	};
 	

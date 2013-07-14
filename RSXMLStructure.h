@@ -16,14 +16,16 @@ namespace RSXML {
 			unsigned int			id;
 	};
 	
-	class Beat : public virtual Base::BaseObject {
+	class Beat {
 		public:
 			Beat( const float& tim = 0.000f, const int& ba = -1 ) 
-				: BaseObject( tim ) { bar = ba; };
+				: time( tim ), bar( ba ) { };
 		
+			const float&		GetTime() const { return time; };
 			const std::string	ToXML() const;
 				
 		private:
+			float				time;
 			int					bar;
 	};
 		
@@ -79,7 +81,7 @@ namespace RSXML {
 	
 	};
 		
-	class Phrase : public virtual Base::BaseObject, public Template {
+	class Phrase : public Base::BaseObject, public Template {
 		public:
 			Phrase( const float& tim = 0.000f, const unsigned int& i = 0, 
 				const unsigned char& var = 0x00 ) : BaseObject( tim ), Template( i ) 
@@ -103,7 +105,7 @@ namespace RSXML {
 	
 	class PhraseProperty { };
 	
-	class Section : public virtual Base::BaseObject {
+	class Section : public Base::BaseObject {
 		public:
 			Section( const float& tim = 0.000f, const std::string nam = "", 
 				const unsigned char& it = 0x00 ) : BaseObject( tim )

@@ -2,8 +2,12 @@
 #include "MIDIObjects.h"
 #endif
 
+#ifndef DEBUG_STUFF
+#include "debug.h"
+#endif
+
 namespace MIDI {
-	float ConvertDelta2Time( const int& delta, const int& division, const float& tempo ) {
+	float ConvertDelta2Time( const unsigned int& delta, const unsigned int& division, const float& tempo ) {
 		float length = (float)delta / (float)division;
 		return ( ONEMINUTE / tempo ) * length;
 	}

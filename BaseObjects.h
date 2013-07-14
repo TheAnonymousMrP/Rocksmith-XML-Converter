@@ -1,7 +1,11 @@
 #ifndef BASE_OBJECTS
 #define BASE_OBJECTS
 
-#ifndef BASS_META
+#ifndef BASE_NOTE
+#include "BaseNote.h"
+#endif
+
+#ifndef BASE_META
 #include "BaseMeta.h"
 #endif
 
@@ -12,7 +16,7 @@
 namespace Base {
 	const std::array<unsigned int, NUMSTRINGS> DEFAULTINDEX = { { 0, 0, 0, 0, 0, 0 } };
 
-	class Chord : public virtual BaseObject {
+	class Chord : public virtual Base::BaseObject {
 		public:
 			Chord( const float& tim = 0.000f, 
 				std::array<unsigned int, NUMSTRINGS> nIn = DEFAULTINDEX ) 

@@ -4,8 +4,8 @@
 #include "RSXMLCreateGuitar.h"
 #include "RSXMLWriter.h"
 
-#ifndef DEBUG_STUFF
-#include "debug.h"
+#ifndef DEBUG_MIDI
+#include "MIDIDebug.h"
 #endif
 
 #include <cstring>
@@ -79,10 +79,10 @@ int main(int argc, char* argv[]) {
 	
 	MIDI::ReaderDefault midi( midiName );
 	midi.Process( arrN );
-	// midi.debug();
 
 	auto& tracks = midi.GetTracks();
-	
+	MIDI::Debug::Tracks( midiName, tracks );
+
 	RSXML::Writer rsxml( midiName, title );
 	for( auto it = tracks.begin(); it != tracks.end(); ++it ) {
 		if( tracks.size() > 0 && (it - tracks.begin()) == 0 ) { }

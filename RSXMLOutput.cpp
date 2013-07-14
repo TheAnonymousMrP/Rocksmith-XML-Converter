@@ -50,7 +50,7 @@ namespace RSXML {
 		<< "\" slideUnpitchTo=\"" << ( values[eValues::SLIDE_UNPITCH] * 2 - 1 )
 		<< "\" tap=\"" << (int)values[eValues::TAP] 
 		<< "\" vibrato=\"" << (int)values[eValues::VIBRATO]
-		// Bass
+		// Bass	
 		<< "\" pluck=\"" << ( values[eValues::BASS_PLUCK] * 2 - 1 ) 
 		<< "\" slap=\"" << ( values[eValues::BASS_SLAP] * 2 - 1 )
 		<< "\" bendValues=\""; ( IsBend() )? ss << time << "," << bend : ss << -1;

@@ -8,7 +8,7 @@
 #include <string>
 
 namespace ARR {
-	class Beat : public virtual Base::BaseObject {
+	class Beat : public Base::BaseObject {
 		public:
 			Beat( const float& tim = 0.000f, const unsigned int& ba = 0,
 				const unsigned char& be = 0, const unsigned char& sub = 0 ) 
@@ -24,7 +24,7 @@ namespace ARR {
 			unsigned char			subBeat;
 	};
 
-	class Phrase : public virtual Base::BaseObject {
+	class Phrase : public Base::BaseObject {
 		public:
 			Phrase( const float& tim = 0.000f, const float& dur = 0.000f, 
 				const std::string& nam = "" )
@@ -38,7 +38,7 @@ namespace ARR {
 			float			duration;
 	};
 	
-	class Section : public virtual Base::BaseObject {
+	class Section : public Base::BaseObject {
 		public:
 			Section( const float& tim = 0.000f, const float& dur = 0.000f,
 				const std::string& nam = "" )
