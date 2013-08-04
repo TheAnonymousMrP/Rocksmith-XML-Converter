@@ -17,9 +17,9 @@
 namespace MIDI {
 	class Note : public Base::GuitarNote { 
 		public:
-			Note( const float& tim = -1.0, const unsigned char& pit = 0x00, 
-				const unsigned char& str = 0x00, const unsigned int& dif = 0 ) 
-				: Base::GuitarNote( tim, pit, str ) { arbitraryDifficulty = dif; };
+			Note( const float& time = -1.0, const unsigned char& pitch = 0xFF, 
+				const unsigned char& string = 0x00, const unsigned int& dif = 0 ) 
+				: Base::GuitarNote( time, pitch, string ) { arbitraryDifficulty = dif; };
 				
 			const unsigned int&		GetArbitraryDifficulty() const 
 										{ return arbitraryDifficulty; };
@@ -45,14 +45,5 @@ namespace MIDI {
 	typedef Base::Tempo 		Tempo;
 	typedef Base::TimeSig 		TimeSig;
 };
-
-
-
-
-
-
-
-
-
 
 #endif

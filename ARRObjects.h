@@ -14,8 +14,6 @@ namespace ARR {
 	typedef Base::MetaFloat			MetaFloat;
 	typedef Base::MetaString		MetaString;
 	typedef Base::MetaUInt			MetaUInt;
-	typedef Base::Tempo				Tempo;
-	typedef Base::TimeSig			TimeSig;
 	typedef	Base::eTuning			eTuning;
 	typedef RSXML::Note::eValues	eNoteValues;
 	typedef RSXML::Chord::eValues	eChordValues;

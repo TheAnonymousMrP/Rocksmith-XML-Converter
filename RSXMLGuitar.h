@@ -26,8 +26,8 @@ namespace RSXML {
 
 	class Guitar : public Base::Guitar {
 		public:
-			Guitar( const float& len = 0.000f, const std::string& nam = "", 
-				const bool& bas = false ) : Base::Guitar( len, nam, bas ) { };
+			Guitar( const float& len = 0.000f, const std::string& nam = "", const bool& bas = false ) 
+				: Base::Guitar( len, nam, bas ) { };
 			Guitar( const Guitar& g ) : Base::Guitar( g ), beats( g.beats ), 
 				chordTemplates( g.chordTemplates), events( g.events ), 
 				phrases( g.phrases ), phraseIterations( g.phraseIterations ),
@@ -64,10 +64,10 @@ namespace RSXML {
 			std::vector<RSXML::Beat>					beats;
 			std::vector<RSXML::ChordTemplate>			chordTemplates;
 			std::vector<RSXML::Event>					events;
-			std::vector<RSXML::PhraseTemplate>			phrases;
-			std::vector<RSXML::Phrase>					phraseIterations;
 			std::vector<RSXML::LinkedDiff>				linkedDiffs;
 			std::vector<RSXML::NewLinkedDiff>			newLinkedDiffs;
+			std::vector<RSXML::PhraseTemplate>			phrases;
+			std::vector<RSXML::Phrase>					phraseIterations;
 			std::vector<RSXML::PhraseProperty>			phraseProperties;
 			std::vector<RSXML::Section>					sections;
 													

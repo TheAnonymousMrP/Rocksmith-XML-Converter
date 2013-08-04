@@ -77,13 +77,13 @@ namespace MIDI {
 			const std::vector<Tempo>&		GetTempos() const { return tempos; };
 			const std::vector<TimeSig>&		GetTimeSigs() const { return timeSigs; };
 			
-			/* Because tempo and marker events are in the first, note-less track of the 
-			MIDI file, further tracks need to copy these vectors. Further investigation 
-			should be made into the plausibility of making them static, but I suspect this
-			would have an unintended effect somewhere down the line if multiple files are
-			dealt with. */
+			/* Because tempo, time-sig and marker events are in the first, note-less track of the MIDI file, 
+			further tracks need to copy these vectors. Further investigation should be made into the 
+			plausibility of making them static, but I suspect this would have an unintended effect somewhere 
+			down the line if multiple files are dealt with. */
 			void 	SetMarkers( const std::vector<MetaString>& mar ) { markers = mar; };
 			void 	SetTempos( const std::vector<Tempo>& tem ) { tempos = tem; };
+			void	SetTimeSigs( const std::vector<TimeSig>& tim ) { timeSigs = tim; };
 			
 			void 	NormaliseDifficulties() {
 						std::vector<unsigned int> difs;

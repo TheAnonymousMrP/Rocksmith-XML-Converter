@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
 	midi.Process( arrN );
 
 	auto& tracks = midi.GetTracks();
-	MIDI::Debug::Tracks( midiName, tracks );
+	// MIDI::Debug::Tracks( midiName, tracks );
 
 	RSXML::Writer rsxml( midiName, title );
 	for( auto it = tracks.begin(); it != tracks.end(); ++it ) {
@@ -95,10 +95,9 @@ int main(int argc, char* argv[]) {
 		}
 		else {			
 			ARR::CreateGuitar ac;
-			CLEAR
 			ARR::Guitar ag = ac.Create( *it );
-			GOTHERE
-			RSXML::Guitar rg;
+			RSXML::CreateGuitar rc;
+			RSXML::Guitar rg = rc.Create( ag );
 			rsxml.WriteGuitar( rg );
 		}
 	} 

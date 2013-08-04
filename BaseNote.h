@@ -5,6 +5,7 @@
 #include <string>
 
 #define NUMSTRINGS 6
+#define BASSSTRINGS 4
 #define NUMFRETS 22
 
 namespace Base {
@@ -20,7 +21,7 @@ namespace Base {
 
 	class Note {
 		public:
-			Note( const float& tim = 0.000f, const unsigned char& pit = 0x00 ) 
+			Note( const float& tim = 0.000f, const unsigned char& pit = 0xFF ) 
 				: time( tim ), pitch( pit ), duration( 0.000f ) { };
 				
 			const float&			GetTime() const { return time; };
@@ -53,9 +54,9 @@ namespace Base {
 	
 	class GuitarNote : public Base::Note {
 		public:
-			GuitarNote( const float& tim = 0.000f, const unsigned char& pit = 0x00, 
-				const unsigned char& str = 0x00, const unsigned int& dif = 0x00 ) 
-				: Base::Note( tim, pit ) { string = str; bend = 0.000f; slide = 0; };
+			GuitarNote( const float& tim = 0.000f, const unsigned char& pit = 0xFF, const unsigned char& str = 0x00, 
+				const unsigned char& dif = 0 ) : Base::Note( tim, pit ), string( str ), bend( 0.000f ), slide( 0 ), 
+				normalisedDifficulty( dif), fret( 0xFF ) { };
 		
 			unsigned char			normalisedDifficulty;
 			float					bend;
@@ -69,7 +70,9 @@ namespace Base {
 										else { return false; }
 									};
 			
-			void					SetFret( const Tuning& tun = aTuning[eTuning::STANDARD_E] ) { fret = tun.pitch[string] - pitch; }
+			void					SetFret( const Tuning& tun = aTuning[ eTuning::STANDARD_E ] ) { 
+										if( pitch != 0xFF ) { fret = pitch - tun.pitch[ string ]; }
+									}
 			
 		protected:
 			unsigned char			fret;
@@ -97,6 +100,8 @@ namespace RSXML {
 	enum eTuning {
 		STANDARD_E,
 		DROP_D,
+		STANDARD_EB,
+		OPEN_G
 	};
 };
 

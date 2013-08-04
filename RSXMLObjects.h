@@ -12,9 +12,6 @@
 #include <vector>
 
 namespace RSXML {
-	typedef	Base::Tempo		Tempo;
-	typedef	Base::TimeSig	TimeSig;
-
 	template <class X>
 	const std::vector<X> getXsFromIsWithinTime(std::vector<X> xSource, std::vector<unsigned int> iSource, float a, float b) {
 		std::vector<X> x;
@@ -48,14 +45,6 @@ namespace RSXML {
 	
 	class Note : virtual public Base::GuitarNote, virtual public LevelObject { 
 		public:
-			Note( const float& tim = -1.0, const unsigned char& str = 0x00, 
-				const unsigned char& pit = 0x00, const unsigned char& dif = 0x00,
-				const unsigned int& in = 0 ) 
-				: Base::GuitarNote( tim, pit, str, dif ), LevelObject(  in )
-				{ for( auto& b : values ) { b = false; } };
-			Note( const Base::GuitarNote& note, const unsigned int& index ) 
-				: Base::GuitarNote( note ), LevelObject( index ) { };
-			
 			enum eValues {
 				ACCENT,
 				BEND_HALF,
@@ -81,6 +70,14 @@ namespace RSXML {
 				BASS_SLAP,
 				size,
 			};
+
+			Note( const float& time = -1.0, const unsigned char& string = 0x00, 
+				const unsigned char& pitch = 0xFF, const unsigned char& dif = 0xFF,
+				const unsigned int& index = 0 ) 
+				: Base::GuitarNote( time, pitch, string, dif ), LevelObject( index )
+				{ for( auto& b : values ) { b = false; } };
+			Note( const Base::GuitarNote& note, const unsigned int& index ) 
+				: Base::GuitarNote( note ), LevelObject( index ) { };
 				
 			bool					values[eValues::size];
 			
@@ -90,11 +87,6 @@ namespace RSXML {
 	
 	class Chord : public Base::Chord, public LevelObject, public Template {
 		public:
-			Chord( const float& tim = 0.000f, const std::array<unsigned int, 6>& nIn = Base::DEFAULTINDEX,
-				const unsigned int& i = 0, const unsigned int& in = 0 ) 
-				: Base::Chord( tim, nIn ), LevelObject( in ), Template( i )  
-				{ values.fill( false ); };
-		
 			enum eValues {
 				ACCENT,
 				FRETHANDMUTE,
@@ -105,11 +97,23 @@ namespace RSXML {
 				STRUM,
 				size,
 			};
-		
+
+			Chord( const float& time = 0.000f, const std::array<unsigned int, 6>& notesIndex = Base::DEFAULTINDEX,
+				const unsigned int& chordID = 0, const unsigned int& index = 0 ) 
+				: Base::Chord( time, notesIndex ), LevelObject( index ), chordID( chordID )  
+				{ values.fill( false ); };
+			Chord( const Base::Chord& g, const std::array<bool,eValues::size> values, const unsigned int& chordID = 0, const unsigned int& index = 0 ) 
+				: Base::Chord( g ), LevelObject( index ), chordID( chordID ), values( values ) { };
+				
 			std::array<bool,eValues::size>	values;
+
+			const unsigned int&				GetChordID() { return chordID.id; };
 			
-			// Doesn't write notes ToXML(). Pass via argument to insert where appropriate.
+			// Doesn't write ToXML() for notes. Pass these via argument to insert where appropriate.
 			const std::string				ToXML( const std::string& notes = "" ) const;
+
+		private:
+			Template						chordID;
 	};
 	
 	class Anchor : public LevelObject {

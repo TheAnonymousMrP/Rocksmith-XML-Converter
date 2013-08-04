@@ -93,15 +93,15 @@ namespace MIDI {
 			case 0x03: track.name = ConvertBytes2String(contents); break;
 			case 0x04: break; // Instrument Name meta-event. Not much use.
 			case 0x05: { // Lyrics.
-				MetaString m( eMeta::LYRICS, timer, ConvertBytes2String(contents) );  
+				MetaString m( eMeta::LYRICS, timer, ConvertBytes2String( contents ) );  
 				track.AddMetaString( m, eMeta::LYRICS ); 
 			} break;
 			case 0x06: { // Marker meta-event.
-				MetaString m( eMeta::MARKER, timer, ConvertBytes2String(contents) );
+				MetaString m( eMeta::MARKER, timer, ConvertBytes2String( contents ) );
 				track.AddMetaString( m, eMeta::MARKER ); 
 			} break;
 			case 0x51: { // Set Tempo.
-				float t = ConvertBytes2Float(contents);
+				float t = ConvertBytes2Float( contents );
 				currentTempo = ONEMINUTEMICRO / t; 
 				Tempo m( timer, currentTempo );
 				track.AddTempo( m );
@@ -111,10 +111,6 @@ namespace MIDI {
 			case 0x58: { // Time Signature. Good to know at some point.
 				std::array<unsigned int, 4> i = { { contents.at(0), contents.at(1), contents.at(2), contents.at(3) } };
 				TimeSig time( timer, i );
-				/* time.num = contents.at(0);
-				time.denom = contents.at(1);
-				time.clock = contents.at(2);
-				time.quart = contents.at(3); */
 				track.AddTimeSig( time );
 			} break;
 			case 0x59: break; // Key Signature.	

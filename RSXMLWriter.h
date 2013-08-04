@@ -1,5 +1,9 @@
 #include "RSXMLCreateGuitar.h"
 
+#ifndef DEBUG_STUFF
+#include "debug.h"
+#endif
+
 #ifndef _ARR_VOCALS
 #include "ARRVocals.h"
 #endif
@@ -18,6 +22,8 @@ An arbitrary value; still need to fully comprehend how it works. */
 #define DEFAULTSTARTBEAT 0.000f // No idea.
 
 namespace RSXML {
+	
+
 	class Writer {
 		public:
 			Writer( const std::string& file = "", const std::string& title = "TITLE" )
@@ -33,12 +39,20 @@ namespace RSXML {
 			
 			float 							avgTempo; // May have no in-game effect.
 			
-			const std::string				WriteStructure( const RSXML::Guitar& g );
+			const std::string				WriteStructure( const RSXML::Guitar& g ) const;
+			const std::string				WriteDifficulties( const RSXML::Guitar& g ) const;
+			const std::string 				WriteDifficulty( const RSXML::Difficulty& d ) const;
 			
-			const std::string 				WriteDifficulty( const RSXML::Difficulty& d );
-			
-			const std::vector<RSXML::Lyric>	ConvertARR2RSXMLLyrics( 
-												const std::vector<Base::Lyric> source );
+			const std::vector<RSXML::Lyric>	ConvertARR2RSXMLLyrics( const std::vector<Base::Lyric> source ) const;
+
+			class VectorEmptyException : Base::VectorEmptyException {
+				public:
+					VectorEmptyException( std::string vectorType ) : Base::VectorEmptyException( vectorType ) { };
+
+					std::string				what() const throw() { 
+						return "RSXML Writer error: " + Base::VectorEmptyException::what();
+					};
+			};
 	};
 };
 

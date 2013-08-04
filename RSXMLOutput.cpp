@@ -137,7 +137,7 @@ namespace RSXML {
 		roman numerals. */
 		std::string var = std::to_string( (unsigned int)variation );
 		std::stringstream ss;
-		ss << "\t\t<phraseIteration time=\"" << time << "\" phraseId=\"" << id 
+		ss << "\t\t<phraseIteration time=\"" << time << "\" phraseId=\"" << phraseID.id 
 		<< "\" variation=\"" << var << "\" />\n";
 		return ss.str();
 	};

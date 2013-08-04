@@ -18,7 +18,7 @@ namespace RSXML {
 	
 	class Beat {
 		public:
-			Beat( const float& tim = 0.000f, const int& ba = -1 ) 
+			Beat( const float& tim = 0.000f, const unsigned char& ba = 0 ) 
 				: time( tim ), bar( ba ) { };
 		
 			const float&		GetTime() const { return time; };
@@ -26,28 +26,78 @@ namespace RSXML {
 				
 		private:
 			float				time;
-			int					bar;
+			unsigned char		bar;
 	};
 		
 	class ChordTemplate : public Template {
 		public:
-			ChordTemplate( const std::array<unsigned char, 6>& fre, 
-				const std::array<unsigned char, 6>& fin, const std::string& cN = "",
-				const std::string& dN = "", const unsigned int& i = 0 ) 
-				: Template( i ), frets( fre ), fingers( fin ) 
-				{ chordName = cN; displayName = dN; };
+			ChordTemplate( const std::array<unsigned char, NUMSTRINGS>& frets, 
+				const std::array<unsigned char, NUMSTRINGS>& fingers, const std::string& cName = "",
+				const std::string& dName = "", const unsigned int& i = 0 ) 
+				: Template( i ), frets( frets ), fingers( fingers ) { chordName = cName; displayName = dName; };
 			
-			std::string							chordName;
-			std::string							displayName;
+			std::string										chordName;
+			std::string										displayName;
+						
+			const std::array<unsigned char, NUMSTRINGS>&	GetFrets() const { return frets; };
+			const std::array<unsigned char, NUMSTRINGS>&	GetFingers() const { return fingers; };
 			
-			const std::array<unsigned char, 6>&	GetFrets() const { return frets; };
-			const std::array<unsigned char, 6>&	GetFingers() const { return fingers; };
-			
-			const std::string					ToXML() const;
-			
+			const std::string								ToXML() const;
+
+
+			// Converts frets from a chord to MIDI pitch.
+			std::array<unsigned char, NUMSTRINGS>			ConvertFrets2Pitches( const Base::Tuning& tuning = Base::aTuning[eTuning::STANDARD_E] ) {
+				std::array<unsigned char, NUMSTRINGS> pitches; pitches.fill( 0xFF );
+				for( unsigned int i = 0; i <= NUMSTRINGS; ++i ) {
+					if( frets[i] != 0xFF ) { pitches[i] = frets[i] + tuning.pitch[i]; }
+				}
+				return pitches;
+			};
+			// Converts MIDI pitches to frets. Static.
+			static std::array<unsigned char, NUMSTRINGS>	ConvertPitches2Frets( const std::array<unsigned char, NUMSTRINGS>& pitches, 
+																const Base::Tuning& tuning = Base::aTuning[eTuning::STANDARD_E] ) { 
+				std::array<unsigned char, NUMSTRINGS> frets; frets.fill( 0xFF );
+				for( unsigned int i = 0; i <= NUMSTRINGS; ++i ) {
+					if( frets[i] != 0xFF ) { frets[i] = pitches[i] - tuning.pitch[i]; }
+				}
+				return frets;
+			};
+			// Experimental: Converts frets to estimated finger positions. Static.
+			static std::array<unsigned char, NUMSTRINGS>	ConvertFrets2Fingers( const std::array<unsigned char, NUMSTRINGS>& frets ) {
+				std::array<unsigned char, NUMSTRINGS> sortedFrets = frets;
+				std::sort( sortedFrets.begin(), sortedFrets.end() );
+
+				// Removes redundant frets from the sorted array. 4 refers to the number of available fingers.
+				std::array<unsigned char, 4> range; range.fill( 0xFF );
+				std::array<unsigned char, NUMSTRINGS>::iterator startFrom = sortedFrets.begin();
+				for( std::array<unsigned char, 4>::iterator it = range.begin(); it != range.end(); ++it ) {
+					for( std::array<unsigned char, NUMSTRINGS>::iterator jt = startFrom; jt != sortedFrets.end(); ++jt ) { 
+						if( *jt != *it ) { 
+							*it = *jt;
+							startFrom = jt;
+							jt = sortedFrets.end();
+						}
+					}
+				}
+
+				// Should assign the correct finger to string based on lowest fret -> highest.
+				std::array<unsigned char, NUMSTRINGS> fingers; fingers.fill( 0xFF );
+				for( std::array<unsigned char, NUMSTRINGS>::iterator it = fingers.begin(); it != fingers.end(); ++it  ) {
+					if( frets[ it - fingers.begin() ] != 255 ) {
+						for( std::array<unsigned char, 4>::iterator jt = range.begin(); jt != range.end(); ++jt ) {
+							if( frets[ it - fingers.begin() ] == *jt ) { 
+								*it = jt - range.begin(); 
+								jt = range.end();
+							}
+						}
+					}
+				}
+				return fingers;
+			}
+						
 		private:
-			std::array<unsigned char, 6>		frets;
-			std::array<unsigned char, 6>		fingers;	
+			std::array<unsigned char, NUMSTRINGS>			frets;
+			std::array<unsigned char, NUMSTRINGS>			fingers;	
 	};
 		
 	class Event : public Base::MetaString {
@@ -61,10 +111,8 @@ namespace RSXML {
 	class PhraseTemplate : public Template {
 		public:
 			PhraseTemplate( const std::string& nam = "", const unsigned char& dif = 0,
-				bool dis = 0, bool ig = 0, bool so = 0, const unsigned int& i = 0 ) 
-				: Template( i ) {
-				name = nam; maxDifficulty = dif; disparity = dis; ignore = ig; solo = so;
-			};
+				bool dis = 0, bool ig = 0, bool so = 0, const unsigned int& phraseID = 0 ) 
+				: Template( phraseID ) { name = nam; maxDifficulty = dif; disparity = dis; ignore = ig; solo = so; };
 			
 			const unsigned char&	GetMaxDifficulty() const { return maxDifficulty; };
 			const std::string&		GetName() const { return name; };
@@ -81,18 +129,19 @@ namespace RSXML {
 	
 	};
 		
-	class Phrase : public Base::BaseObject, public Template {
+	class Phrase : public Base::BaseObject {
 		public:
-			Phrase( const float& tim = 0.000f, const unsigned int& i = 0, 
-				const unsigned char& var = 0x00 ) : BaseObject( tim ), Template( i ) 
-				{ variation = var; };
+			Phrase( const float& tim = 0.000f, const unsigned int& phraseID = 0, const unsigned char& var = 0x00 ) 
+				: BaseObject( tim ), phraseID( phraseID ), variation( var ) { };
 			
 			const unsigned char&	GetVariation() const { return variation; };
+			unsigned char			GetPhraseID() const { return phraseID.id; };
 			
 			const std::string		ToXML() const;
 			
 		private:
 			unsigned char			variation;
+			Template				phraseID;
 	};
 		
 	class LinkedDiff { 
@@ -107,9 +156,8 @@ namespace RSXML {
 	
 	class Section : public Base::BaseObject {
 		public:
-			Section( const float& tim = 0.000f, const std::string nam = "", 
-				const unsigned char& it = 0x00 ) : BaseObject( tim )
-				{ name = nam; iteration = it; };
+			Section( const float& tim = 0.000f, const std::string nam = "", const unsigned char& it = 0x00 ) 
+				: BaseObject( tim ) { name = nam; iteration = it; };
 			
 			const std::string&		GetName() const { return name; };
 			const unsigned char&	GetIteration() const { return iteration; };

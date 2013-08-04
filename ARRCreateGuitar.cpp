@@ -11,8 +11,15 @@ namespace ARR {
 		track = t;
 		ARR::Guitar g( t.duration, t.name, bass );
 		
+		// Global data.
+		g.SetTempos( t.GetTempos() );
+		g.SetTimeSigs( t.GetTimeSigs() );
+		g.SetPhrases( CreatePhrases( t.GetMetaStrings( Base::eMeta::PHRASE ) ) );
+		g.SetSections( CreateSections( t.GetMetaStrings( Base::eMeta::MARKER ) ) );
+		g.SetEvents( t.GetMetaStrings( Base::eMeta::EVENT ) );
 		HandleSpecialMetas( g );
 		
+		// Note data.
 		std::vector<ARR::Note> notes = ConvertMIDI2ARRNotes( t.GetNotes() );
 		std::vector<ARR::Note> notesOff = ConvertMIDI2ARRNotes( t.GetNotes(0) );
 		
@@ -33,40 +40,28 @@ namespace ARR {
 		std::vector<ARR::Chord> chords;
 		std::vector<ARR::Difficulty> difficulties;
 
-		WOOP
-		std::cout << track.GetMaxDifficulty() ENDLINE
-
-		
+		// Debug corner.
+		// std::cout << "Number of difficulties: " << track.GetMaxDifficulty() ENDLINE
 
 		for( unsigned int i = 0; i <= track.GetMaxDifficulty(); ++i ) {
 			Difficulty d = CreateDifficulty( i, notes, chords );
 			difficulties.push_back( d );
 		};
 
-		GOTHERE
-		
-
-				
-
 		g.SetDifficulties( difficulties );
 		g.SetNotes( notes );
 		g.SetChords( chords );
 		
-		std::vector<ARR::Phrase> phrases;
-		std::vector<ARR::Section> sections;
-		
-		g.SetPhrases( phrases );
-		g.SetSections( sections );
 		return g;
 	};
 	
-	void CreateGuitar::HandleSpecialMetas( ARR::Guitar& g ) {
+	void CreateGuitar::HandleSpecialMetas( ARR::Guitar& g ) const {
 		using Base::eTuning;
 		using Base::aTuning;
 		auto& mSpecial( track.GetMetaStrings( eMeta::SPECIAL ) );
 		eTuning tun = eTuning::STANDARD_E;
 		for( auto& m : mSpecial ) {
-			if( m.GetString() == "TStandardE" ) { tun = eTuning::STANDARD_E; break;}
+			if( m.GetString() == "TStandardE" ) { tun = eTuning::STANDARD_E; break; }
 			else if( m.GetString() == "TDropD" ) { tun = eTuning::DROP_D; break; }
 			else if( m.GetString() == "TStandardEb" ) { tun = eTuning::STANDARD_EB; break; }
 			else if( m.GetString() == "TOpenG" ) { tun = eTuning::OPEN_G; break; }
@@ -74,21 +69,71 @@ namespace ARR {
 		g.tuning = aTuning[tun];
 	}
 	
-	std::vector<ARR::Note> CreateGuitar::ConvertMIDI2ARRNotes( std::vector<MIDI::Note> source ) {
-		/* We intentionally 'slice' the MIDI note to a base note and then add it to 
-		the ARR note vector. Provides an index for the note. */
-		std::vector<ARR::Note> dest;
-		for( auto& midi : source ) {	
-			Base::GuitarNote base( midi ); 
-			ARR::Note arr( base, dest.size() );
-			dest.push_back( arr );
+	// Produces ARR::Phrase vector from Base::MetaString vector.
+	const std::vector<ARR::Phrase> CreateGuitar::CreatePhrases( const std::vector<Base::MetaString>& source ) const {
+		std::vector<ARR::Phrase> dest;
+		try {
+			if( source.empty() ) { throw Base::VectorEmptyException( "MetaString" ); }
+			for( std::vector<Base::MetaString>::const_iterator it = source.begin(); it != source.end(); ++it ) {
+				float duration = 0.000f;
+				auto jt = it + 1;
+				if( jt != source.end() ) { duration = jt->GetTime() - it->GetTime(); }
+				ARR::Phrase newPhrase( it->GetTime(), duration, it->GetString() );
+				dest.push_back( newPhrase );
+			}
+		} catch ( Base::VectorEmptyException e ) {
+			std::cerr << e.what() << "\n";
+			ARR::Phrase badPhrase( 0.000f, 0.000f, "No phrases found." );
+			dest.push_back( badPhrase );
+		}
+		return dest;
+	}
+
+	// Produces ARR::Section vector from Base::MetaString vector.
+	const std::vector<ARR::Section> CreateGuitar::CreateSections( const std::vector<Base::MetaString>& source ) const {
+		std::vector<ARR::Section> dest;
+		try {
+			if( source.empty() ) { throw Base::VectorEmptyException( "MetaString" ); }
+			for( std::vector<Base::MetaString>::const_iterator it = source.begin(); it != source.end(); ++it ) {
+				float duration = 0.000f;
+				auto jt = it + 1;
+				if( jt != source.end() ) { duration = jt->GetTime() - it->GetTime(); }
+				ARR::Section newSection( it->GetTime(), duration, it->GetString() );
+				dest.push_back( newSection );
+			}
+		} catch ( Base::VectorEmptyException e ) {
+			std::cerr << e.what() << "\n";
+			ARR::Section badPhrase( 0.000f, 0.000f, "No phrases found." );
+			dest.push_back( badPhrase );
 		}
 		return dest;
 	}
 	
-	void CreateGuitar::SetTechniques( std::vector<ARR::Note>& notes ) {
+	std::vector<ARR::Note> CreateGuitar::ConvertMIDI2ARRNotes( std::vector<MIDI::Note> source ) const {
+		std::vector<ARR::Note> dest;
+		try {
+			if( source.empty() ) { throw Base::VectorEmptyException( "MIDI::Note" ); }
+			/* We intentionally 'slice' the MIDI note to a base note and then add it to 
+			the ARR note vector. Provides an index for the note. */
+			for( auto& midi : source ) {	
+				Base::GuitarNote base( midi ); 
+				ARR::Note arr( base, dest.size() );
+				arr.SetFret();
+				dest.push_back( arr );
+			}
+		} catch( Base::VectorEmptyException e ) {
+			std::cerr << e.what() << "\n";
+			ARR::Note badNote;
+			dest.push_back( badNote ); 
+		}
+		return dest;
+	}
+	
+	void CreateGuitar::SetTechniques( std::vector<ARR::Note>& notes ) const {
 		auto& techniques( track.GetMetaStrings( eMeta::TECHNIQUE ) );
-		if( techniques.size() > 0 ) {
+		try {
+			if( techniques.empty() ) { throw Base::VectorEmptyException( "Techniques" ); }
+			else if ( notes.empty() ) { throw Base::VectorEmptyException( "ARR::Note" ); } // Should be impossible.
 			/* As there will always be less techniques than notes, we will iterate
 			over the former to reduce redundant searches. We know all meta-events 
 			and notes were created in a chronological order (at least with MIDI 
@@ -143,16 +188,13 @@ namespace ARR {
 					} else { break; }
 				}	
 			}
+		} catch( Base::VectorEmptyException e ) {
+			std::cerr << e.what() << "\n";
 		}
 	}
 	
-	const Difficulty CreateGuitar::CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) {
+	const Difficulty CreateGuitar::CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) const {
 		Difficulty d;
-
-		GOTHERE
-
-		
-
 		std::vector<unsigned int> index;
 		std::vector<unsigned int> notesIndex;
 		std::vector<unsigned int> chordsIndex;
@@ -160,25 +202,15 @@ namespace ARR {
 			if( n.normalisedDifficulty <= dif ) { index.push_back( n.GetIndex() ); } 
 		}
 		auto noteIt = index.begin();
-		while( noteIt < index.end() ) {
+		while( noteIt != index.end() ) {
 			unsigned int chordSize = 0;
 			auto chordIt = noteIt + 1;
 
-			while( chordIt != index.end() && 
-				notes.at( *chordIt ).GetTime() == notes.at( *noteIt ).GetTime() ) 
-				{ 
-				++chordSize;
-				++chordIt;
-			}	
-
-			WOOP
-			std::cout << "NoteIt: " << noteIt - index.begin() << " Note Time: " << notes.at( *noteIt ).GetTime() ENDLINE
 			while( chordIt != index.end() && notes.at( *chordIt ).GetTime() == notes.at( *noteIt ).GetTime() ) { 
 				// std::cout << "Chord Size: " << chordSize << " ChordIt: " << chordIt - index.begin() << " Note Time: " << notes.at( *chordIt ).GetTime() ENDLINE
 				++chordSize;
 				++chordIt;
 			}	
-			std::cout << "NoteIt: " << noteIt - index.begin() << " ChordIt: " << chordIt - index.begin() << " Chord Size: " << chordSize ENDLINE
 
 			if( chordSize == 0 ) { notesIndex.push_back( *noteIt ); }
 			else {
@@ -187,14 +219,7 @@ namespace ARR {
 				float time = notes.at( *noteIt ).GetTime();
 				std::array<unsigned int, NUMSTRINGS> indexes = Base::DEFAULTINDEX;
 
-				for( auto it = noteIt; it <= noteIt + chordSize; ++it ) {
-					indexes[it - noteIt] = *it;
-				}
-
-				WOOP
-				std::cout << chordSize ENDLINE
 				for( auto it = noteIt; it <= noteIt + chordSize; ++it ) { indexes[it - noteIt] = *it; }
-				GOTHERE
 
 				// Finding a name for the chord.
 				std::string name;
@@ -216,14 +241,12 @@ namespace ARR {
 			noteIt += chordSize + 1;
 		} 
 
-		
-
-		GOTHERE
-
 		d.SetNotesIndex( notesIndex );
 		d.SetChordsIndex( chordsIndex );
 		return d;
 	}
+
+	
 };
 
 /* Functions		

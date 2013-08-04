@@ -86,7 +86,6 @@ namespace MIDI {
 				int filePos = ProcessDelta( HEADERLENGTH );
 				bool moarTrack = true;
 				while( filePos < fileSize && moarTrack ) {
-					std::cout << "New Track " << tracks.size() ENDLINE
 					filePos = ProcessDelta( filePos );
 					if( numArrs > 0 && tracks.size() - 1 >= numArrs )
 						{ moarTrack = false; } 
@@ -128,6 +127,7 @@ namespace MIDI {
 		MIDI::Track track;
 		if( tracks.size() > 0 ) { 
 			track.SetTempos( tracks.at(0).GetTempos() ); 
+			track.SetTimeSigs( tracks.at(0).GetTimeSigs() );
 			track.SetMarkers( tracks.at(0).GetMetaStrings( Base::eMeta::MARKER ) );
 		}
 		

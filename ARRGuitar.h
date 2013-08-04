@@ -19,12 +19,14 @@ namespace ARR {
 			const 	std::vector<ARR::Difficulty>&	GetDifficulties() const { return difficulties; };
 			const 	std::vector<ARR::Note>& 		GetNotes() const { return notes; };
 			const 	std::vector<ARR::Chord>&		GetChords() const { return chords; };
+			const	std::vector<Base::MetaString>&	GetEvents() const { return events; };
 			
 			void	SetPhrases( const std::vector<ARR::Phrase>& v ) { phrases = v; };
 			void	SetSections( const std::vector<ARR::Section>& v ) { sections = v; };
 			void	SetDifficulties( const std::vector<ARR::Difficulty>& v ) { difficulties = v; };
 			void	SetNotes( const std::vector<ARR::Note>& v ) { notes = v; };
 			void	SetChords( const std::vector<ARR::Chord>& v ) { chords = v; };
+			void	SetEvents( const std::vector<Base::MetaString>& v ) { events = v; };
 			
 		private:
 			std::vector<ARR::Phrase>				phrases;
@@ -32,6 +34,7 @@ namespace ARR {
 			std::vector<ARR::Difficulty>			difficulties;
 			std::vector<ARR::Note> 					notes;
 			std::vector<ARR::Chord>					chords;
+			std::vector<Base::MetaString>			events; // Unused in arrangements, but necessary to pass through to RSXML.
 	};
 };
 

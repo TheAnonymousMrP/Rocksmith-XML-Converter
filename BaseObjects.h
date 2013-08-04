@@ -13,8 +13,22 @@
 #include <string>
 #include <vector>
 
+#define CHORDERROR 65365
+
 namespace Base {
-	const std::array<unsigned int, NUMSTRINGS> DEFAULTINDEX = { { 0, 0, 0, 0, 0, 0 } };
+	class VectorEmptyException {
+		public:
+			VectorEmptyException( std::string vectorType ) : vectorType( vectorType ) { };
+
+			std::string				what() const throw() { 
+				return "Attempted to parse an empty " + vectorType + " vector.";
+			};
+
+		private:
+			const std::string		vectorType;
+		};
+
+	const std::array<unsigned int, NUMSTRINGS> DEFAULTINDEX = { { CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR } };
 
 	class Chord : public virtual Base::BaseObject {
 		public:
@@ -27,7 +41,7 @@ namespace Base {
 			
 			const unsigned int GetSize() const { 
 				for( auto it = notesIndex.begin(); it != notesIndex.end(); ++it ) { 
-					if ( *it == 0 && ( it - notesIndex.begin() ) != 0 )
+					if ( *it == CHORDERROR && ( it - notesIndex.begin() ) != 0 )
 						{ return ( it - notesIndex.begin() + 1 ); }
 				}
 				return NUMSTRINGS;
