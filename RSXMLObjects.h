@@ -12,16 +12,36 @@
 #include <vector>
 
 namespace RSXML {
+	template<class X>
+	const std::vector<X> GetLevelObjectsWithinTime( std::vector<X> source, float start, float end ) {
+		std::vector<X> dest;
+		try {
+			if( source.empty() ) { throw Base::VectorEmptyException( "Source" ); }
+			for(auto& x : source) { 
+				if( source.size() > x.GetIndex() ) {
+					if( x.GetTime() >= end ) { break; }
+					if( x.GetTime() >= start )
+						{ dest.push_back( x ); }
+				} else { break; }
+			}
+		} catch( Base::VectorEmptyException e ) { std::cerr << e.what() << "\n"; }
+		return dest;
+	}
+
 	template <class X>
-	const std::vector<X> getXsFromIsWithinTime(std::vector<X> xSource, std::vector<unsigned int> iSource, float a, float b) {
+	const std::vector<X> GetLevelObjectsFromIndexesWithinTime( std::vector<X> xSource, std::vector<unsigned int> iSource, float a, float b ) {
 		std::vector<X> x;
-		for(auto& i : iSource) { 
-			if( xSource.size() > i ) {
-				if( xSource.at( i ).GetTime() >= b ) { break; }
-				if( xSource.at( i ).GetTime() >= a )
-					{ x.push_back( xSource.at( i ) ); }
-			} else { break; }
-		}
+		try {
+			if( xSource.empty() ) { throw Base::VectorEmptyException( "Source" ); }
+			else if( iSource.empty() ) { throw Base::VectorEmptyException( "Index" ); }
+			for(auto& i : iSource) { 
+				if( xSource.size() > i ) {
+					if( xSource.at( i ).GetTime() >= b ) { break; }
+					if( xSource.at( i ).GetTime() >= a )
+						{ x.push_back( xSource.at( i ) ); }
+				} else { break; }
+			}
+		} catch( Base::VectorEmptyException e ) { /* std::cerr << e.what() << "\n"; */ }
 		return x;
 	}
 	
@@ -71,17 +91,15 @@ namespace RSXML {
 				size,
 			};
 
-			Note( const float& time = -1.0, const unsigned char& string = 0x00, 
-				const unsigned char& pitch = 0xFF, const unsigned char& dif = 0xFF,
-				const unsigned int& index = 0 ) 
-				: Base::GuitarNote( time, pitch, string, dif ), LevelObject( index )
-				{ for( auto& b : values ) { b = false; } };
-			Note( const Base::GuitarNote& note, const unsigned int& index ) 
-				: Base::GuitarNote( note ), LevelObject( index ) { };
+			Note( const float& time = -1.0, const unsigned char& string = 0x00, const unsigned char& pitch = 0xFF, 
+				const unsigned char& dif = 0xFF, const unsigned int& index = 0 ) : Base::GuitarNote( time, pitch, string, dif ), 
+				LevelObject( index ) { values.fill( false ); };
+			Note( const Note& note ) : Base::GuitarNote( note ), LevelObject( note ), values( note.values ) { };
+			Note( const Base::GuitarNote& note, const unsigned int& index ) : Base::GuitarNote( note ), LevelObject( index ) { values.fill( false ); };
 				
-			bool					values[eValues::size];
+			std::array<bool,eValues::size>	values;
 			
-			const std::string		ToXML( const bool& chord = false ) const;
+			const std::string				ToXML( const bool& chord = false ) const;
 			
 	};
 	
@@ -102,6 +120,7 @@ namespace RSXML {
 				const unsigned int& chordID = 0, const unsigned int& index = 0 ) 
 				: Base::Chord( time, notesIndex ), LevelObject( index ), chordID( chordID )  
 				{ values.fill( false ); };
+			Chord( const Chord& chord ) : Base::Chord( chord ), LevelObject( chord ), Template( chord ), values( chord.values ) { };
 			Chord( const Base::Chord& g, const std::array<bool,eValues::size> values, const unsigned int& chordID = 0, const unsigned int& index = 0 ) 
 				: Base::Chord( g ), LevelObject( index ), chordID( chordID ), values( values ) { };
 				
@@ -118,9 +137,9 @@ namespace RSXML {
 	
 	class Anchor : public LevelObject {
 		public:
-			Anchor( const float& tim = 0.000f, const unsigned char& fre = 1,
-				const float& wid = 4.000f, const unsigned int& in = 0 ) 
-				: LevelObject( in ), time( tim ), fret( fre ), width( wid ) { };
+			Anchor( const float& time = 0.000f, const unsigned char& fret = 1,
+				const float& width = 4.000f, const unsigned int& index = 0 ) 
+				: LevelObject( index ), time( time ), fret( fret ), width( width ) { };
 			
 			const float&					GetTime() const { return time; };	
 			const unsigned char&			GetFret() const { return fret; };
@@ -136,9 +155,9 @@ namespace RSXML {
 	
 	class HandShape : public LevelObject, public Template { 
 		public:
-			HandShape( const float& tim = -1.0, const unsigned int& i = 0, 
-				const float& dur = 0.000f, const unsigned int& in = 0 )
-				: LevelObject( in ), Template( i ), time( tim ), duration( dur ) { };
+			HandShape( const float& time = -1.0, const unsigned int& chordID = 0, 
+				const float& duration = 0.000f, const unsigned int& index = 0 )
+				: LevelObject( index ), Template( chordID ), time( time ), duration( duration ) { };
 			
 			const float&					GetTime() const { return time; };	
 			const float&					GetDuration() const { return duration; };
@@ -152,11 +171,12 @@ namespace RSXML {
 	
 	class Difficulty : public LevelObject {
 		public:
-			Difficulty( const float& len = 0.000f, const unsigned int& i = 0, 
-				const bool& trans = false ) : LevelObject( i ), length( len ),
-				transcription( trans ) { };
+			Difficulty( const float& length = 0.000f, const unsigned int& index = 0, const bool& isTranscription = false ) 
+				: LevelObject( index ), length( length ), transcription( isTranscription ) { };
+			Difficulty( const Difficulty& d, const bool& isTranscription ) : LevelObject( d ), length( d.length), transcription( isTranscription ), 
+				notesIndex( d.notesIndex ), chordsIndex( d.chordsIndex ), anchorsIndex( d.anchorsIndex ), handsIndex( d.handsIndex ) { };
 			
-			const float& GetLength() const { return length; };
+			const float&						GetLength() const { return length; };
 			
 			const std::vector<unsigned int>&	GetNotesIndex() const { return notesIndex; };
 			const std::vector<unsigned int>& 	GetChordsIndex() const { return chordsIndex; };

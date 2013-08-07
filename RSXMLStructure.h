@@ -5,28 +5,32 @@
 #include "BaseObjects.h"
 #endif
 
+#ifndef DEBUG_STUFF
+#include "debug.h"
+#endif
+
 #include <string>
 #include <sstream>
 
 namespace RSXML {
 	class Template {
 		public:
-			Template( const unsigned int& i = 0 ) { id = i; };
+			Template( const unsigned int& id = 0 ) : id( id ) { };
 			
 			unsigned int			id;
 	};
 	
 	class Beat {
 		public:
-			Beat( const float& tim = 0.000f, const unsigned char& ba = 0 ) 
-				: time( tim ), bar( ba ) { };
+			Beat( const float& time = 0.000f, const int& bar = 0 ) 
+				: time( time ), bar( bar ) { };
 		
 			const float&		GetTime() const { return time; };
 			const std::string	ToXML() const;
 				
 		private:
 			float				time;
-			unsigned char		bar;
+			int					bar;
 	};
 		
 	class ChordTemplate : public Template {
@@ -46,9 +50,10 @@ namespace RSXML {
 
 
 			// Converts frets from a chord to MIDI pitch.
-			std::array<unsigned char, NUMSTRINGS>			ConvertFrets2Pitches( const Base::Tuning& tuning = Base::aTuning[eTuning::STANDARD_E] ) {
+			std::array<unsigned char, NUMSTRINGS>			ConvertFrets2Pitches( const Base::Tuning& tuning = Base::aTuning[eTuning::STANDARD_E] ) const {
 				std::array<unsigned char, NUMSTRINGS> pitches; pitches.fill( 0xFF );
-				for( unsigned int i = 0; i <= NUMSTRINGS; ++i ) {
+				// for( auto it = frets.begin(); it != frets.end(); ++it ) { std::cout << it - frets.begin() << ": " << (unsigned int)*it << "\t"; } std::cout ENDLINE
+				for( unsigned int i = 0; i < NUMSTRINGS; ++i ) {
 					if( frets[i] != 0xFF ) { pitches[i] = frets[i] + tuning.pitch[i]; }
 				}
 				return pitches;
@@ -67,9 +72,11 @@ namespace RSXML {
 				std::array<unsigned char, NUMSTRINGS> sortedFrets = frets;
 				std::sort( sortedFrets.begin(), sortedFrets.end() );
 
-				// Removes redundant frets from the sorted array. 4 refers to the number of available fingers.
+				/* Removes redundant frets from the sorted array. 4 refers to the number of available fingers.
+				GOTHERE
 				std::array<unsigned char, 4> range; range.fill( 0xFF );
 				std::array<unsigned char, NUMSTRINGS>::iterator startFrom = sortedFrets.begin();
+				GOTHERE
 				for( std::array<unsigned char, 4>::iterator it = range.begin(); it != range.end(); ++it ) {
 					for( std::array<unsigned char, NUMSTRINGS>::iterator jt = startFrom; jt != sortedFrets.end(); ++jt ) { 
 						if( *jt != *it ) { 
@@ -78,8 +85,8 @@ namespace RSXML {
 							jt = sortedFrets.end();
 						}
 					}
-				}
-
+				} 
+				GOTHERE
 				// Should assign the correct finger to string based on lowest fret -> highest.
 				std::array<unsigned char, NUMSTRINGS> fingers; fingers.fill( 0xFF );
 				for( std::array<unsigned char, NUMSTRINGS>::iterator it = fingers.begin(); it != fingers.end(); ++it  ) {
@@ -89,6 +96,18 @@ namespace RSXML {
 								*it = jt - range.begin(); 
 								jt = range.end();
 							}
+						}
+					}
+				}
+				GOTHERE */
+
+				// Should assign the correct finger to string based on lowest fret -> highest.
+				std::array<unsigned char, NUMSTRINGS> fingers; fingers.fill( 0xFF );
+				unsigned char last = 0xFF;
+				for( auto it = frets.begin(); it != frets.end(); ++it ) {
+					if( *it != 0xFF ) { 
+						for( auto jt = sortedFrets.begin(); jt != sortedFrets.end(); ++jt ) {
+							if( *it == *jt ) { fingers[ it - frets.begin() ] = jt - sortedFrets.begin(); sortedFrets.end(); }
 						}
 					}
 				}
@@ -110,11 +129,11 @@ namespace RSXML {
 		
 	class PhraseTemplate : public Template {
 		public:
-			PhraseTemplate( const std::string& nam = "", const unsigned char& dif = 0,
-				bool dis = 0, bool ig = 0, bool so = 0, const unsigned int& phraseID = 0 ) 
-				: Template( phraseID ) { name = nam; maxDifficulty = dif; disparity = dis; ignore = ig; solo = so; };
+			PhraseTemplate( const std::string& name = "", const unsigned int& maxDifficulty = 0, bool disparity = 0, bool ignore = 0, 
+				bool solo = 0, const unsigned int& phraseID = 0 ) : Template( phraseID ), maxDifficulty( maxDifficulty ), name( name ), 
+				disparity( disparity ), ignore( ignore ), solo( solo ) { };
 			
-			const unsigned char&	GetMaxDifficulty() const { return maxDifficulty; };
+			const unsigned int&		GetMaxDifficulty() const { return maxDifficulty; };
 			const std::string&		GetName() const { return name; };
 			const bool&				GetDisparity() const { return disparity; };
 			const bool&				GetIgnore() const { return ignore; };
@@ -123,7 +142,7 @@ namespace RSXML {
 			const std::string		ToXML() const;
 				
 		private:
-			unsigned char			maxDifficulty;
+			unsigned int			maxDifficulty;
 			std::string				name;			
 			bool					disparity, ignore, solo;
 	

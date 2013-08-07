@@ -25,16 +25,21 @@ namespace RSXML {
 		ConvertARR2RSXMLChords( arrg.GetChords(), cTemplates, chords, rsg.tuning, rsg.GetNotes() );
 		rsg.SetChordTemplates( cTemplates );
 		rsg.SetChords( chords );
+		// Anchors
 
-		WOOP
+		// HandShapes
+
+
+		// Difficulty
+		rsg.SetDifficulties( ConvertARR2RSXMLDifficulty( arrg.GetDifficulties() ) );
+
 		// Phrases
 		std::vector<RSXML::PhraseTemplate> pTemplates;
 		std::vector<RSXML::Phrase> pIterations;
-		ConvertARR2RSXMLPhrases( arrg.GetPhrases(), pTemplates, pIterations );
+		ConvertARR2RSXMLPhrases( arrg.GetPhrases(), pTemplates, pIterations, rsg.GetNotes() );
 		rsg.SetPhrases( pTemplates );
 		rsg.SetPhraseIterations( pIterations );
-		GOTHERE
-		
+			
 		return rsg;
 	}
 
@@ -68,7 +73,7 @@ namespace RSXML {
 					{ ++timeSigIt; numerator = timeSigIt->numerator; beat = 0; }
 			
 				// Needs to implement TimeSigs (properly).
-				unsigned int bBar = 0;
+				int bBar = 0;
 				if(beat % numerator == 0)
 					{ bBar = bar; ++bar; beat = 0; }
 				else { bBar = -1; }
@@ -90,7 +95,7 @@ namespace RSXML {
 	const std::vector<RSXML::Event>	CreateGuitar::ConvertEvents( const std::vector<Base::MetaString>& source ) { 
 		std::vector<RSXML::Event> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "Event" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "RSXML::Event" ); }
 			for( auto& e : source ) { 
 				dest.push_back( RSXML::Event( e.GetTime(), e.GetString() ) );
 			}
@@ -101,22 +106,25 @@ namespace RSXML {
 	}
 
 	// Converts ARR::Phrase vector into RSXML::Phrase vector.
-	void CreateGuitar::ConvertARR2RSXMLPhrases( const std::vector<ARR::Phrase>& source, std::vector<RSXML::PhraseTemplate>& temp, std::vector<RSXML::Phrase>& phrase ) { 
+	void CreateGuitar::ConvertARR2RSXMLPhrases( const std::vector<ARR::Phrase>& source, 
+		std::vector<RSXML::PhraseTemplate>& temp, std::vector<RSXML::Phrase>& phrase, const std::vector<RSXML::Note>& notes ) { 
 		try {
 			if( source.empty() ) { throw Base::VectorEmptyException( "Phrase" ); }
-			unsigned int phraseID = 0;
 			for( auto& p : source ) {
+				unsigned int phraseID = 0;
 				if( !temp.empty() ) {
-					for( std::vector<RSXML::PhraseTemplate>::iterator it = temp.begin(); it != temp.end(); ++it ) {
+					for( std::vector<RSXML::PhraseTemplate>::iterator it = temp.begin(); it != temp.end(); ) {
 						++phraseID;
 						if( p.name == it->GetName() ) { 
 							phraseID = it - temp.begin(); 
 							it = temp.end();
-						}
+						} else { ++it; }
 					}
-				} else { ++phraseID; }
+				}
 				if( phraseID == temp.size() ) {	
 					unsigned int maxDifficulty = 0;
+					auto phraseNotes = GetLevelObjectsWithinTime( notes, p.GetTime(), p.GetTime() + p.GetDuration() );
+					for( auto& n : phraseNotes ) { if( n.normalisedDifficulty > maxDifficulty ) { maxDifficulty = n.normalisedDifficulty; } }
 					RSXML::PhraseTemplate newTemplate( p.name, maxDifficulty, false, false, false, phraseID ); 
 					temp.push_back( newTemplate );
 				}
@@ -132,13 +140,14 @@ namespace RSXML {
 			temp.push_back( badTemplate );
 			phrase.push_back( badPhrase );
 		} 	
+		// std::cerr << "Phrases: " << phrase.size() << " \tTemplates: " << temp.size() << "\n";
 	}
 	
 	// Converts ARR::Section vector into RSXML::Section vector.
 	const std::vector<RSXML::Section> CreateGuitar::ConvertARR2RSXMLSections( const std::vector<ARR::Section>& source ) { 
 		std::vector<RSXML::Section> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "Section" ); } 
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Section" ); } 
 			for( auto& arr : source ) {
 				unsigned int iteration = 1;
 				// Compare by name to previous sections.
@@ -159,7 +168,7 @@ namespace RSXML {
 		// At present, ARR and RSXML notes are the same. This may not be the case in the future.
 		std::vector<RSXML::Note> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "Note" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Note" ); }
 			for( auto& arr : source ) {	
 				RSXML::Note rsxml( arr );
 				dest.push_back( rsxml );
@@ -176,13 +185,8 @@ namespace RSXML {
 	void CreateGuitar::ConvertARR2RSXMLChords( const std::vector<ARR::Chord>& source, std::vector<RSXML::ChordTemplate>& temp, 
 		std::vector<RSXML::Chord>& chord, const Base::Tuning& tuning, const std::vector<RSXML::Note>& notes ) {
 		try {
-			
-			if( source.empty() ) { throw Base::VectorEmptyException( "Chord" ); }
-			if( notes.empty() ) { throw Base::VectorEmptyException( "Note" ); }
-			/* Debug corner!
-				for( auto it = notes.begin(); it != notes.end(); ++it ) { 
-					std::cerr << "Note " << it - notes.begin() << ": \tPitch: " << (unsigned int)it->GetPitch() ENDLINE
-				} */
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Chord" ); }
+			if( notes.empty() ) { throw Base::VectorEmptyException( "ARR::Note" ); }
 			for( auto& arr : source ) {
 				// We need to compare the generate templates here.
 				unsigned int chordTemplate = 0;
@@ -195,22 +199,23 @@ namespace RSXML {
 				for( unsigned char i = 0; i < NUMSTRINGS; ++i ) {
 					if( cIndexes[i] != CHORDERROR ) { cNotes[i] = notes.at( cIndexes[i] ); }
 					/* Debug corner!
-						std::cerr << "Note " << (unsigned int)i << ": \tIndex: " << (unsigned int)cIndexes[i] 
+						std::cerr << "Note " << (unsigned int)i << ":  Index: " << (unsigned int)cIndexes[i] 
+						<< " \tTime: " << cNotes[i].GetTime()
 						<< " \tPitch: " << (unsigned int)cNotes[i].GetPitch()
 						<< " \tString: " << (unsigned int)cNotes[i].GetString()
-						<< " \tFret: " << (unsigned int)cNotes[i].GetFret() ENDLINE */
+						<< "  Fret: " << (unsigned int)cNotes[i].GetFret() ENDLINE */
 					cPitches[i] = cNotes[i].GetPitch();
 					tFrets[i] = cNotes[i].GetFret();
 				}
 				if( !temp.empty() ) {
-					for( std::vector<RSXML::ChordTemplate>::iterator it = temp.begin(); it != temp.end(); ++it ) {
+					for( std::vector<RSXML::ChordTemplate>::iterator it = temp.begin(); it != temp.end(); ) {
 						++chordTemplate;
-						if( cPitches == it->ConvertFrets2Pitches( tuning ) ) { 
-							chordTemplate = it - temp.begin(); 
+						if( tFrets == it->GetFrets() ) { 
+							chordTemplate = it - temp.begin();
 							it = temp.end();
-						}
+						} else { ++it; }
 					}
-				} else { ++chordTemplate; }
+				}
 				if( chordTemplate == temp.size() ) {	
 					// Frets acquired above.
 					std::array<unsigned char, NUMSTRINGS> tFingers = RSXML::ChordTemplate::ConvertFrets2Fingers( tFrets );
@@ -220,12 +225,38 @@ namespace RSXML {
 				}
 
 				Base::Chord base( arr );
-				RSXML::Chord rsxml( base, arr.values, arr.index, chordTemplate );
+				RSXML::Chord rsxml( base, arr.values, chordTemplate, arr.index );
 				chord.push_back( rsxml );
 			}
 		} catch( Base::VectorEmptyException e ) {
 			std::cerr << e.what() << "\n";
 		} catch( std::exception e ) { std::cerr << e.what() << "\n"; }
+		// std::cerr << "Chords: " << chord.size() << " \tTemplates: " << temp.size() << "\n";
+	}
+
+	// Converts ARR::Difficulty vector into RSXML::Difficulty vector.
+	const std::vector<RSXML::Difficulty> CreateGuitar::ConvertARR2RSXMLDifficulty( const std::vector<ARR::Difficulty>& source ) {
+		std::vector<RSXML::Difficulty> dest;
+		try {
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Difficulty" ); }
+			for( auto& arr : source ) {	
+				RSXML::Difficulty rsxml( arr.GetLength(), arr.GetDifficulty() );
+				rsxml.SetNotesIndex( arr.GetNotesIndex() );
+				rsxml.SetChordsIndex( arr.GetChordsIndex() );
+				// rsxml.SetAnchorsIndex( );
+				// rsxml.SetHandShapesIndex( );
+				dest.push_back( rsxml );
+			}
+		} catch( Base::VectorEmptyException e ) {
+			std::cout << e.what() << "\n";
+			RSXML::Difficulty badDifficulty;
+			// Should add a note just to be safe. There will always be at least one note because of error prevention in Convert...Notes.
+			std::vector<unsigned int> badNoteIndex;
+			badNoteIndex.push_back( 0 );
+			badDifficulty.SetNotesIndex( badNoteIndex );
+			dest.push_back( badDifficulty ); 
+		}
+		return dest;
 	}
 
 }

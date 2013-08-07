@@ -12,7 +12,8 @@ namespace ARR {
 	class Guitar : public Base::Guitar {
 		public:
 			Guitar( const float& len = 0.000f, const std::string& nam = "", const bool& bas = false ) : Base::Guitar( len, nam, bas ) { };
-			Guitar( const Guitar& g ) : Base::Guitar( g ), phrases( g.phrases ), sections( g.sections ), notes( g.notes ), chords(g.chords) { }; 
+			Guitar( const Guitar& g ) : Base::Guitar( g ), phrases( g.phrases ), sections( g.sections ), difficulties( g.difficulties), 
+											notes( g.notes ), chords(g.chords), events( g.events) { }; 
 			
 			const 	std::vector<ARR::Phrase>&		GetPhrases() const { return phrases; };
 			const	std::vector<ARR::Section>&		GetSections() const { return sections; };

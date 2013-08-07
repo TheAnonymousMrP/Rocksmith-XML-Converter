@@ -30,31 +30,29 @@ namespace Base {
 
 	const std::array<unsigned int, NUMSTRINGS> DEFAULTINDEX = { { CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR } };
 
-	class Chord : public virtual Base::BaseObject {
+	class Chord : public Base::BaseObject {
 		public:
-			Chord( const float& tim = 0.000f, 
-				std::array<unsigned int, NUMSTRINGS> nIn = DEFAULTINDEX ) 
-				: BaseObject( tim ), notesIndex( nIn ) { };
+			Chord( const float& time = 0.000f, std::array<unsigned int, NUMSTRINGS> notesIndex = DEFAULTINDEX ) 
+				: BaseObject( time ), notesIndex( notesIndex ) { };
 			
-			const std::array<unsigned int, NUMSTRINGS>&	
-				GetNotesIndex() const { return notesIndex; };
+			const std::array<unsigned int, NUMSTRINGS>&		GetNotesIndex() const { return notesIndex; };
 			
-			const unsigned int GetSize() const { 
+			const unsigned int								GetSize() const { 
 				for( auto it = notesIndex.begin(); it != notesIndex.end(); ++it ) { 
 					if ( *it == CHORDERROR && ( it - notesIndex.begin() ) != 0 )
-						{ return ( it - notesIndex.begin() + 1 ); }
+						{ return ( it - notesIndex.begin() ); }
 				}
 				return NUMSTRINGS;
 			};
 													
 		protected:
-			std::array<unsigned int, NUMSTRINGS>	notesIndex;
+			std::array<unsigned int, NUMSTRINGS>			notesIndex;
 	};
 	
 	class Arrangement {
 		public:
-			Arrangement( const float& dur = 0.000f, const std::string& nam = "" ) 
-				: duration( dur ), name( nam ) { };
+			Arrangement( const float& duration = 0.000f, const std::string& name = "" ) 
+				: duration( duration ), name( name ) { };
 	
 			const float&		GetDuration() const { return duration; };
 			const std::string&	GetName() const { return name; };		
@@ -66,8 +64,8 @@ namespace Base {
 	
 	class Guitar : public Base::Arrangement {
 		public:
-			Guitar( const float& dur = 0.000f, const std::string& nam = "", const bool& bas = false ) 
-				: Arrangement( dur, nam ), tuning( Base::aTuning[eTuning::STANDARD_E] ) { bass = bas; };
+			Guitar( const float& duration = 0.000f, const std::string& name = "", const bool& isBass = false ) 
+				: Arrangement( duration, name ), tuning( Base::aTuning[eTuning::STANDARD_E] ) { bass = isBass; };
 			Guitar( const Guitar& g ) : Arrangement( g ), tuning( g.tuning ), 
 				bass( g.bass ), tempos( g.tempos ), timeSigs( g.timeSigs ) { };
 			

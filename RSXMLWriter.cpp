@@ -6,7 +6,6 @@ namespace RSXML {
 		arrangement = g;
 		std::ofstream write;
 		std::string file = fileName + "-" + g.GetName() + ".xml";
-		std::cout << file << "\n";
 		write.open( file.c_str() );
 		write << "<?xml version='1.0' encoding='UTF-8'?> \n"
 		<< "<song>\n" << "\t<title>" << songName << "</title>\n"
@@ -72,11 +71,10 @@ namespace RSXML {
 		<< "\t<internalName>" << fileName << "</internalName>\n" // Project name?
 		<< "\t<lastConversionDateTime>" << "01-01-1970 00:01" 
 		<< "</lastConversionDateTime>\n";
-		GOTHERE
+		
 		write << WriteStructure( g );
-		GOTHERE
 		write << WriteDifficulties( g );
-		GOTHERE
+		
 		write << "</song>";
 		write.close();
 		}
@@ -137,7 +135,7 @@ namespace RSXML {
 			auto& chords = g.GetChordTemplates();
 			if( chords.empty() ) { throw Writer::VectorEmptyException( "RSXML::ChordTemplate" ); }
 			write << "\t<chordTemplates count=\"" << chords.size() << "\">\n";
-			for( auto& t : chords ) { t.ToXML(); }
+			for( auto& t : chords ) { write << t.ToXML(); }
 			write << "\t</chordTemplates>\n";
 		} catch( Writer::VectorEmptyException e ) {
 			std::cerr << e.what() << "\n";
@@ -157,7 +155,7 @@ namespace RSXML {
 			write << "\t</events>\n";
 		} catch( Writer::VectorEmptyException e ) {
 			std::cerr << e.what() << "\n";
-			write << "\t<something count=\"" << 0 << "\" />\n";
+			write << "\t<events count=\"" << 0 << "\" />\n";
 		}
 		
 		// Beat Grid
@@ -192,16 +190,16 @@ namespace RSXML {
 		std::stringstream write("");
 		const std::vector<Difficulty>& difficulties = g.GetDifficulties();
 		try {
-			if( difficulties.empty() ) { throw Base::VectorEmptyException( "Difficulty" ); }
-			/* Transcription Track -- whatever that is. It seems to be one full 
-			difficulty of a song. Maybe max? */	
-			write << WriteDifficulty( difficulties.back() );
+			if( difficulties.empty() ) { throw Writer::VectorEmptyException( "Difficulty" ); }
+			/* Transcription Track -- whatever that is. It seems to be one full difficulty of a song. Maybe max? */	
+			Difficulty transcription( difficulties.back(), true );
+			write << WriteDifficulty( transcription );
 			// Levels -- where shit gets real.
 			write << "\t<levels count=\"" << difficulties.size() << "\" >\n";
 			for( auto it = difficulties.begin(); it != difficulties.end(); ++it )
 				{ write << WriteDifficulty( *it ); } 
 			write << "\t</levels>\n";
-		} catch( Base::VectorEmptyException e ) {
+		} catch( Writer::VectorEmptyException e ) {
 			std::cerr << e.what() << "\n"; 
 			write << "\t<levels count=\"" << 0 << "\" />\n";
 		}
@@ -212,8 +210,8 @@ namespace RSXML {
 	const std::string Writer::WriteDifficulty( const RSXML::Difficulty& d ) const {
 		std::stringstream ss("");
 		std::string t = "";
-		if( d.IsTranscription() ) { ss << "\t<transcriptionTrack "; t = "\t"; }
-		else { ss << "\t\t<level "; t = "\t\t"; }
+		if( d.IsTranscription() ) { ss << "\t<transcriptionTrack "; t = "\t\t"; }
+		else { ss << "\t\t<level "; t = "\t\t\t"; }
 		
 		ss << "difficulty=\"" << d.GetIndex() << "\">\n"; 
 		
@@ -244,16 +242,11 @@ namespace RSXML {
 			if( it != (phraseIt.end() - 1) ) { end = (it + 1)->GetTime(); }
 			else { end = d.GetLength(); }
 			
-			auto& notes( getXsFromIsWithinTime( nSource, nIndex, start, end ) );
-			auto& chords( getXsFromIsWithinTime( cSource, cIndex, start, end ) );
-			auto& ans( getXsFromIsWithinTime( aSource, aIndex, start, end ) );
-			auto& hands( getXsFromIsWithinTime( hSource, hIndex, start, end ) );
-			
-			/* std::cout << "ID: " << p.getID() << " Difficulty: " << dif
-			<< " Start: " << start << " End: " << end ENDLINE
-			std::cout << "\tCurrent Notes: " << notes.size() << " Current Chords: "
-			<< chords.size() ENDLINE */
-			
+			auto& notes( GetLevelObjectsFromIndexesWithinTime( nSource, nIndex, start, end ) );
+			auto& chords( GetLevelObjectsFromIndexesWithinTime( cSource, cIndex, start, end ) );
+			auto& ans( GetLevelObjectsFromIndexesWithinTime( aSource, aIndex, start, end ) );
+			auto& hands( GetLevelObjectsFromIndexesWithinTime( hSource, hIndex, start, end ) );
+
 			RSXML::PhraseTemplate p = arrangement.GetPhrases().at( it->GetPhraseID() );
 			if( d.IsTranscription() || d.GetIndex() <= p.GetMaxDifficulty() ) { 
 				for( const Note& n : notes ) { nS << t << n.ToXML(); }
@@ -265,6 +258,10 @@ namespace RSXML {
 				for( const HandShape& h : hands ) { hS << t << h.ToXML(); }
 				hSize += hands.size();
 			}
+
+			/* std::cerr << "ID: " << (unsigned int)it->GetPhraseID() << " Difficulty: " << d.GetIndex() << " Max Dif: " << p.GetMaxDifficulty() 
+				<< " Start: " << start << " End: " << end ENDLINE
+			std::cerr << "\tCurrent Notes: " << notes.size() << " Current Chords: " << chords.size() ENDLINE */
 		}
 		// Notes
 		ss << t << "<notes count=\"" << nSize << "\">\n";

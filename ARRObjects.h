@@ -21,11 +21,8 @@ namespace ARR {
 	
 	class Chord : public Base::Chord {
 		public:
-			Chord(  const float& tim = 0.000f, 
-				const std::array<unsigned int, 6>& nIn = Base::DEFAULTINDEX,
-				const std::string& cN = "", const unsigned int& i = 0 ) 
-				: Base::Chord( tim, nIn ), chordName( cN ), index( i ) 
-				{ values.fill( false ); };
+			Chord(  const float& tim = 0.000f, const std::array<unsigned int, 6>& nIn = Base::DEFAULTINDEX, const std::string& cN = "", 
+				const unsigned int& i = 0 ) : Base::Chord( tim, nIn ), chordName( cN ), index( i ) { values.fill( false ); };
 				
 			std::string							chordName;
 			unsigned int						index;

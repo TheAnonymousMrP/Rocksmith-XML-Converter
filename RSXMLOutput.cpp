@@ -7,7 +7,7 @@ namespace RSXML {
 
 	const std::string Lyric::ToXML() const {
 		std::stringstream ss;
-		ss << "<vocal time=\"" << time << "\" note=\"" << pitch << "\" length=\"" 
+		ss << "<vocal time=\"" << time << "\" note=\"" << (unsigned int)pitch << "\" length=\"" 
 		<< duration << "\" lyric=\"" << word << "\"/>\n";
 		return ss.str();
 	};
@@ -26,30 +26,30 @@ namespace RSXML {
 		'mute' could be a replacement for the unimplemented fretHandMutes. */
 		std::stringstream ss("");
 
-		if(chord) { ss << "\t<chordN"; }
-		else { ss << "<n"; }
+		if(chord) { ss << "\t\t<chordN"; }
+		else { ss << "\t<n"; }
 		ss << "ote time=\"" << time << "\" sustain=\"" << duration << "\" string=\"" 
-		<< string << "\" fret=\"" << fret << "\" ignore=\"" 
-		<< (int)values[eValues::IGNORE] 
-		<< "\" linkNext=\"" << (int)values[eValues::LINKNEXT] 
+		<< (unsigned int)string << "\" fret=\"" << (unsigned int)fret << "\" ignore=\"" 
+		<< values[eValues::IGNORE] 
+		<< "\" linkNext=\"" << (unsigned int)values[eValues::LINKNEXT] 
 		<< "\" bend=\"" << IsBend() 
-		<< "\" harmonic=\"" << (int)values[eValues::HARMONIC] 
-		<< "\" hopo=\"" << (int)values[eValues::HOPO] 
-		<< "\" hammerOn=\"" << (int)values[eValues::HOPO_ON] 
-		<< "\" pullOff=\"" << (int)values[eValues::HOPO_OFF] 
-		<< "\" palmMute=\"" << (int)values[eValues::PALMMUTE] 
+		<< "\" harmonic=\"" << values[eValues::HARMONIC] 
+		<< "\" hopo=\"" << values[eValues::HOPO] 
+		<< "\" hammerOn=\"" << values[eValues::HOPO_ON] 
+		<< "\" pullOff=\"" << values[eValues::HOPO_OFF] 
+		<< "\" palmMute=\"" << values[eValues::PALMMUTE] 
 		<< "\" slideTo=\""; ( slide ) ? ss << slide : ss << -1; 
-		ss << "\" tremolo=\"" << (int)values[eValues::TREMOLO]
+		ss << "\" tremolo=\"" << values[eValues::TREMOLO]
 		// New stuff
-		<< "\" accent=\"" << (int)values[eValues::ACCENT] 
+		<< "\" accent=\"" << values[eValues::ACCENT] 
 		<< "\" leftHand=\"" << ( values[eValues::TAP_LEFT] * 2 - 1 )
 		<< "\" rightHand=\"" << ( values[eValues::TAP_RIGHT] * 2 - 1 )
-		<< "\" harmonicPinch=\"" << (int)values[eValues::PINCHHARMONIC] 
-		<< "\" mute=\"" << (int)values[eValues::FRETHANDMUTE] 
-		<< "\" pickDirection=\"" << (int)values[eValues::PICK_DIRECTION] 
+		<< "\" harmonicPinch=\"" << values[eValues::PINCHHARMONIC] 
+		<< "\" mute=\"" << values[eValues::FRETHANDMUTE] 
+		<< "\" pickDirection=\"" << values[eValues::PICK_DIRECTION] 
 		<< "\" slideUnpitchTo=\"" << ( values[eValues::SLIDE_UNPITCH] * 2 - 1 )
-		<< "\" tap=\"" << (int)values[eValues::TAP] 
-		<< "\" vibrato=\"" << (int)values[eValues::VIBRATO]
+		<< "\" tap=\"" << values[eValues::TAP] 
+		<< "\" vibrato=\"" << values[eValues::VIBRATO]
 		// Bass	
 		<< "\" pluck=\"" << ( values[eValues::BASS_PLUCK] * 2 - 1 ) 
 		<< "\" slap=\"" << ( values[eValues::BASS_SLAP] * 2 - 1 )
@@ -61,21 +61,23 @@ namespace RSXML {
 
 	const std::string Chord::ToXML( const std::string& notes ) const {
 		std::stringstream ss("");
-		ss << "<chord time=\"" << time 
+		ss << "\t<chord time=\"" << time 
 		<< "\" linkNext=\"" << (int)values[eValues::LINKNEXT] 
 		<< "\" accent=\"" << (int)values[eValues::ACCENT] 
-		<< "\" chordId=\"" << id 
+		<< "\" chordId=\"" << chordID.id 
 		<< "\" fretHandMute=\"" << (int)values[eValues::FRETHANDMUTE] 
 		<< "\" highDensity=\"" << (int)values[eValues::HIGHDENSITY] 
 		<< "\" ignore=\"" << (int)values[eValues::IGNORE] 
 		<< "\" palmMute=\"" << (int)values[eValues::PALMMUTE] 
 		<< "\" strum=\""; 
 		( values[eValues::STRUM] ) ? ss << "up" : ss << "down";
-		ss << "\">\n";
 		
-		if( notes == "" ) { ss << notes; }
-		
-		ss << "</chord>\n";
+		if( notes == "" ) { ss << "\" />\n"; } 
+		else { 
+			ss << "\">\n";
+			ss << notes; 
+			ss << "\t\t\t\t</chord>\n"; 
+		}
 		
 		return ss.str();
 	};
@@ -83,7 +85,7 @@ namespace RSXML {
 	const std::string Anchor::ToXML() const {
 		std::stringstream ss;
 		ss << "<anchor time=\"" << time << "\" fret=\"" << (unsigned int)fret 
-		<< "\" width=\"" << width << "\" />\n";
+		<< "\" width=\"" << (unsigned int)width << "\" />\n";
 		return ss.str();
 	};
 
@@ -98,22 +100,26 @@ namespace RSXML {
 
 	const std::string Beat::ToXML() const {
 		std::stringstream ss;
-		ss << "\t\t<ebeat time=\"" << time << "\" measure=\"" << bar << "\" />\n";
+		ss << "\t\t<ebeat time=\"" << time << "\" measure=\"" << (int)bar << "\" />\n";
 		return ss.str();
 	};
 
 	const std::string ChordTemplate::ToXML() const {
-		std::stringstream ss;
-		ss << "\t\t<chordTemplate chordName=\"" << chordName
+		std::stringstream write;
+		write << "\t\t<chordTemplate chordName=\"" << chordName
 		<< "\" displayName=\"" << displayName << "\" ";
 		// Frets
-		for( auto f = frets.begin(); f != frets.end(); ++f )
-			{ ss << "fret" << (f - frets.begin()) << "=\"" << *f << "\" "; }
+		for( auto f = frets.begin(); f != frets.end(); ++f ) { 
+			write << "fret" << (f - frets.begin()) << "=\"";
+			( *f == 0xFF ) ? write << -1 : write << (unsigned int)*f; 
+			write << "\" "; }
 		// Fingers
-		for( auto f = fingers.begin(); f != fingers.end(); ++f )
-			{ ss << "finger" << (f - fingers.begin()) << "=\"" << *f << "\" "; }
-		ss << " />\n";
-		return ss.str();
+		for( auto f = fingers.begin(); f != fingers.end(); ++f ){ 
+			write << "finger" << (f - fingers.begin()) << "=\"";
+			( *f == 0xFF ) ? write << -1 : write << (unsigned int)*f;
+			write << "\" "; }
+		write << " />\n";
+		return write.str();
 	};
 
 	const std::string Event::ToXML() const { 
@@ -125,8 +131,8 @@ namespace RSXML {
 	const std::string PhraseTemplate::ToXML() const {
 		std::stringstream ss;
 		ss << "\t\t<phrase name=\"" << name << "\" maxDifficulty=\""
-		<< maxDifficulty << "\" disparity=\"" << disparity << "\" ignore=\"" 
-		<< ignore << "\" solo=\"" << solo << "\" />\n";
+		<< (unsigned int)maxDifficulty << "\" disparity=\"" << (unsigned int)disparity << "\" ignore=\"" 
+		<< (unsigned int)ignore << "\" solo=\"" << (unsigned int)solo << "\" />\n";
 		return ss.str();
 	};
 
@@ -144,7 +150,7 @@ namespace RSXML {
 
 	const std::string Section::ToXML() const {
 		std::stringstream ss;
-		ss << "\t\t<section name=\"" << name << "\" number=\"" << iteration 
+		ss << "\t\t<section name=\"" << name << "\" number=\"" << (unsigned int)iteration 
 		<< "\" startTime=\"" << time << "\" />\n";
 		return ss.str();
 	};

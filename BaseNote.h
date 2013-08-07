@@ -11,7 +11,7 @@
 namespace Base {
 	class BaseObject {
 		public:
-			BaseObject( const float& tim = 0.000f ) { time = tim; }
+			BaseObject( const float& time = 0.000f ) : time( time ) { };
 			
 			const float&	GetTime() const { return time; };
 			

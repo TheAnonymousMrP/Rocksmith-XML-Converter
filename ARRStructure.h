@@ -10,9 +10,9 @@
 namespace ARR {
 	class Beat : public Base::BaseObject {
 		public:
-			Beat( const float& tim = 0.000f, const unsigned int& ba = 0,
-				const unsigned char& be = 0, const unsigned char& sub = 0 ) 
-				: Base::BaseObject( tim ) { bar = ba; beat = be; subBeat = sub; };
+			Beat( const float& time = 0.000f, const unsigned int& bar = 0,
+				const unsigned char& beat = 0, const unsigned char& subBeat = 0 ) 
+				: Base::BaseObject( time ), bar( bar ), beat( beat ), subBeat( subBeat ) { };
 			
 			const unsigned int&		GetBar() const { return bar; };
 			const unsigned char&	GetBeat() const { return beat; };
@@ -26,9 +26,8 @@ namespace ARR {
 
 	class Phrase : public Base::BaseObject {
 		public:
-			Phrase( const float& tim = 0.000f, const float& dur = 0.000f, 
-				const std::string& nam = "" )
-				: Base::BaseObject( tim ) { duration = dur; name = nam; };
+			Phrase( const float& time = 0.000f, const float& duration = 0.000f, const std::string& name = "" )
+				: Base::BaseObject( time ), name( name ), duration( duration ) { };
 			
 			std::string		name;
 			
@@ -40,9 +39,8 @@ namespace ARR {
 	
 	class Section : public Base::BaseObject {
 		public:
-			Section( const float& tim = 0.000f, const float& dur = 0.000f,
-				const std::string& nam = "" )
-				: Base::BaseObject( tim ) { duration = dur; name = nam; };
+			Section( const float& time = 0.000f, const float& duration = 0.000f, const std::string& name = "" )
+				: Base::BaseObject( time ), name( name ), duration( duration ) { };
 			
 			std::string		name;
 				
@@ -54,29 +52,27 @@ namespace ARR {
 	
 	class Difficulty {
 		public:
-			Difficulty( const float& len = 0.000f, const unsigned int& i = 0 ) 
-				: difficulty( i ), length( len ) { };
+			Difficulty( const float& length = 0.000f, const unsigned int& index = 0 ) : length( length ), difficulty( index ) { };
 			
-			const float& GetLength() const { return length; };
+			const unsigned int&					GetDifficulty() const { return difficulty; }
+			const float&						GetLength() const { return length; };
 			
-			const std::vector<unsigned int>& 
-				GetNotesIndex() const { return notesIndex; };
-			const std::vector<unsigned int>& 	
-				GetChordsIndex() const { return chordsIndex; };
+			const std::vector<unsigned int>&	GetNotesIndex() const { return notesIndex; };
+			const std::vector<unsigned int>& 	GetChordsIndex() const { return chordsIndex; };
 			
-			void 			SetNotesIndex( const std::vector<unsigned int>& v ) 
-								{ notesIndex = v; };
-			void			SetChordsIndex( const std::vector<unsigned int>& v ) 
-								{ chordsIndex = v; };
+			void 								SetNotesIndex( const std::vector<unsigned int>& v ) 
+													{ notesIndex = v; };
+			void								SetChordsIndex( const std::vector<unsigned int>& v ) 
+													{ chordsIndex = v; };
 		
 			// Too 'complex' to write ToXML(). Use Writer::WriteDifficulty() instead.
 
 		private:
-			unsigned int				difficulty;
-			float						length;
+			unsigned int						difficulty;
+			float								length;
 		
-			std::vector<unsigned int>	notesIndex;
-			std::vector<unsigned int>	chordsIndex;
+			std::vector<unsigned int>			notesIndex;
+			std::vector<unsigned int>			chordsIndex;
 	};
 };
 

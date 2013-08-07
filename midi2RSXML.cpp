@@ -91,11 +91,14 @@ int main(int argc, char* argv[]) {
 			std::string extFileName = "";
 			if ( externalLyrics ) { extFileName = midiName; }
 			ARR::Vocals v = a.Create( *it, extFileName );
+			std::cout << midiName << "-Vocals.xml" << "\n";
 			rsxml.WriteVocals( v );
 		}
-		else {			
+		else {
+			std::cout << "Track " << it - tracks.begin() << ": \n";
 			ARR::CreateGuitar ac;
 			ARR::Guitar ag = ac.Create( *it );
+			std::cout << midiName << "-" << ag.GetName() << ".xml\n";
 			RSXML::CreateGuitar rc;
 			RSXML::Guitar rg = rc.Create( ag );
 			rsxml.WriteGuitar( rg );

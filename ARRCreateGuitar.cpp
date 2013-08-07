@@ -21,14 +21,14 @@ namespace ARR {
 		
 		// Note data.
 		std::vector<ARR::Note> notes = ConvertMIDI2ARRNotes( t.GetNotes() );
-		std::vector<ARR::Note> notesOff = ConvertMIDI2ARRNotes( t.GetNotes(0) );
+		std::vector<ARR::Note> notesOff = ConvertMIDI2ARRNotes( t.GetNotes( 0 ) );
 		
 		// Sorting into a single vector. If there's a mismatch of on and off, 
 		// it skips the lot. Better safe than sorry.
 		if( notes.size() == notesOff.size() ) {
 			auto jt = notesOff.begin();
 			for( auto it = notes.begin(); it != notes.end(); ++it, ++jt ) {
-				it->duration = jt->GetTime();
+				it->duration = jt->GetTime() - it->GetTime();
 			}
 		} else { 
 			for( auto& n : notes ) { n.duration = 0.000f; } 
@@ -48,9 +48,9 @@ namespace ARR {
 			difficulties.push_back( d );
 		};
 
-		g.SetDifficulties( difficulties );
 		g.SetNotes( notes );
 		g.SetChords( chords );
+		g.SetDifficulties( difficulties );
 		
 		return g;
 	};
@@ -194,7 +194,6 @@ namespace ARR {
 	}
 	
 	const Difficulty CreateGuitar::CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) const {
-		Difficulty d;
 		std::vector<unsigned int> index;
 		std::vector<unsigned int> notesIndex;
 		std::vector<unsigned int> chordsIndex;
@@ -241,11 +240,11 @@ namespace ARR {
 			noteIt += chordSize + 1;
 		} 
 
+		Difficulty d( notes.at( index.back() ).GetTime(), dif );
 		d.SetNotesIndex( notesIndex );
 		d.SetChordsIndex( chordsIndex );
 		return d;
 	}
-
 	
 };
 
