@@ -18,15 +18,24 @@
 namespace Base {
 	class VectorEmptyException {
 		public:
-			VectorEmptyException( std::string vectorType ) : vectorType( vectorType ) { };
+			VectorEmptyException( std::string vectorType, std::string location = "", unsigned int lineNumber = 0 ) 
+					: vectorType( vectorType ), location( location ), lineNumber( lineNumber ) { };
 
-			std::string				what() const throw() { 
-				return "Attempted to parse an empty " + vectorType + " vector.";
+			std::string 			what() const throw() { 
+				std::string buffer = "Attempted to parse an empty " + vectorType + " vector";
+				if( location != "" ) { 
+					buffer += " in "; buffer += location; 
+					if( lineNumber != 0 ) { buffer += " at line " ; buffer += (unsigned int)lineNumber; }
+				} 
+				buffer += ".";
+				return buffer;
 			};
 
 		private:
 			const std::string		vectorType;
-		};
+			const std::string		location;
+			unsigned int			lineNumber;
+	};
 
 	const std::array<unsigned int, NUMSTRINGS> DEFAULTINDEX = { { CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR, CHORDERROR } };
 
@@ -85,6 +94,7 @@ namespace Base {
 			std::vector<Base::Tempo>		tempos;
 			std::vector<Base::TimeSig>		timeSigs;
 	};
-};
+
+}
 
 #endif

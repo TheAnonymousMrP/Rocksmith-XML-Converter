@@ -23,17 +23,17 @@ An arbitrary value; still need to fully comprehend how it works. */
 
 namespace RSXML {
 	
-
 	class Writer {
 		public:
-			Writer( const std::string& file = "", const std::string& title = "TITLE" )
-				: fileName( file ), songName( title ), avgTempo( DEFAULTTEMPO ) { };
+			Writer( const std::string& file, const std::string& title = "TITLE", const bool& debug = false )
+				: fileName( file ), songName( title ), avgTempo( DEFAULTTEMPO ), debug( debug ) { };
 			
 			void WriteGuitar( const RSXML::Guitar& g ); 
 			void WriteVocals( const ARR::Vocals& v ); 
 			
 		private:
 			std::string 					fileName, songName;
+			const bool						debug;
 			
 			RSXML::Guitar					arrangement;
 			
@@ -45,14 +45,14 @@ namespace RSXML {
 			
 			const std::vector<RSXML::Lyric>	ConvertARR2RSXMLLyrics( const std::vector<Base::Lyric> source ) const;
 
-			class VectorEmptyException : Base::VectorEmptyException {
+			/* class VectorEmptyException : Base::VectorEmptyException {
 				public:
-					VectorEmptyException( std::string vectorType ) : Base::VectorEmptyException( vectorType ) { };
+					VectorEmptyException( std::string vectorType, std::string location ) : Base::VectorEmptyException( vectorType, location ) { };
 
 					std::string				what() const throw() { 
 						return "RSXML Writer error: " + Base::VectorEmptyException::what();
-					};
-			};
+					}; 
+			}; */
 	};
 };
 

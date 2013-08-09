@@ -30,7 +30,8 @@ namespace MIDI {
 
 	class Reader {
 		public:
-			Reader(std::string s = "") { fileName = s; currentTempo = DEFAULTTEMPO; };
+			Reader( const std::string& fileName, const float& startOffset = 0.000f, const bool& debug = false ) 
+				: fileName( fileName ), currentTempo( DEFAULTTEMPO ), startOffset( startOffset ), debug( debug ) { };
 			
 			void 						Process( unsigned int numArrs );
 		
@@ -45,7 +46,10 @@ namespace MIDI {
 			std::vector<MIDI::Track>	tracks; 		// Stores processed data.
 			
 			float						currentTempo;
+			float						startOffset;
 			unsigned int				division;
+
+			const bool					debug;
 			
 			// Copies file to memblock.
 			unsigned int 				GetMIDI( std::string midiName ); 
@@ -54,15 +58,10 @@ namespace MIDI {
 			unsigned int 				ProcessDelta( const unsigned int& beginPoint );
 			// All return new iterator position.
 			// Handles the event of the MIDI message - determines which process to use.
-			unsigned int 				ProcessContent( unsigned int it, float& timer, 
-											MIDI::Track& track );
-			virtual unsigned int 		ProcessNote( unsigned int it, const float& timer, 
-											MIDI::Track& track, unsigned char c = 0 ) 
-											{ return 0; };
-			virtual unsigned int 		ProcessMeta( unsigned int it, float& timer, 
-											MIDI::Track& track ) { return 0; };
-			virtual unsigned int 		ProcessSysEx( unsigned int it, float& timer, 
-											MIDI::Track& track ) { return 0; };	
+			unsigned int 				ProcessContent( unsigned int it, float& timer, MIDI::Track& track );
+			virtual unsigned int 		ProcessNote( unsigned int it, const float& timer, MIDI::Track& track, unsigned char c = 0 ) { return 0; };
+			virtual unsigned int 		ProcessMeta( unsigned int it, float& timer, MIDI::Track& track ) { return 0; };
+			virtual unsigned int 		ProcessSysEx( unsigned int it, float& timer, MIDI::Track& track ) { return 0; };	
 				
 			// Converters and stuff
 			float		 				GetCurrentTempo( std::vector<Base::Tempo>::const_iterator& tCount, 
@@ -134,7 +133,7 @@ namespace MIDI {
 		std::vector<Base::Tempo>::const_iterator tCount = track.GetTempos().begin();
 		std::vector<Base::Tempo>::const_iterator tEnd = track.GetTempos().end();
 		currentTempo = DEFAULTTEMPO;
-		float timer = 0.000f;
+		float timer = startOffset;
 		
 		std::vector<unsigned char> time;
 	

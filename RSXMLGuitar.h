@@ -25,6 +25,41 @@ namespace RSXML {
 	};
 
 	class Guitar : public Base::Guitar {
+		enum eValues {
+			REPRESENT,
+			STANDARDTUNING,
+			// Chords
+			NONSTANDARDCHORDS,
+			BARRECHORDS,
+			DOUBLESTOPS,
+			DROPDPOWER,
+			FIFTHSANDOCTAVES,
+			POWERCHORDS,
+			OPENCHORDS,
+			// Techniques
+			BENDS,
+			FRETHANDMUTES,
+			HARMONICS,
+			HOPOS,
+			PALMMUTES,
+			PINCHHARMONICS,
+			SLIDES,
+			SUSTAIN,
+			TAPPING,
+			TREMOLO,
+			UNPITCHEDSLIDES,
+			VIBRATO,
+			// Bass
+			BASSPICK,
+			FINGERPICKING,
+			TWOFINGERPICKING,
+			SLAPPOP,
+			// Misc
+			PICKDIRECTION,
+			SYNCOPATION,
+			size,
+		};
+
 		public:
 			Guitar( const float& len = 0.000f, const std::string& nam = "", const bool& bas = false ) 
 				: Base::Guitar( len, nam, bas ) { };
@@ -33,6 +68,8 @@ namespace RSXML {
 				phrases( g.phrases ), phraseIterations( g.phraseIterations ),
 				sections ( g.sections ), difficulties( g.difficulties ), notes( g.notes ),
 				chords( g.chords ), anchors( g.anchors ), hands( g.hands ) { };
+
+			std::array<bool,eValues::size>				values;
 			
 			const std::vector<RSXML::Beat>&				GetBeats() const { return beats; };
 			const std::vector<RSXML::ChordTemplate>&	GetChordTemplates() const { return chordTemplates; };

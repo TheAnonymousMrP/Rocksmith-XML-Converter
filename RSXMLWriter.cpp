@@ -18,21 +18,27 @@ namespace RSXML {
 		<< "\t<offset>" << 0 - DEFAULTOFFSET << "</offset>\n"
 		<< "\t<centOffset>" << DEFAULTOFFSETCENT << "</centOffset>\n" // No idea.
 		<< "\t<songLength>" << g.GetDuration() << "</songLength>\n" 
-		<< "\t<startBeat>" << DEFAULTSTARTBEAT << "</startBeat>\n"
-		<< "\t<averageTempo>" << DEFAULTTEMPO << "</averageTempo>\n"
+		<< "\t<startBeat>" << DEFAULTSTARTBEAT << "</startBeat>\n";
+		if( !g.GetTempos().empty() ) { 
+			double tempos = 0.000f;
+			for( auto& t : g.GetTempos() ) { tempos += t.GetTempo(); }
+			avgTempo = ( tempos / g.GetTempos().size() );
+		}
+		write << "\t<averageTempo>" << avgTempo << "</averageTempo>\n"
 		// Tuning information. May not be implemented yet.
 		<< "\t<tuning ";
 		try {
 			auto& tuning = g.tuning.pitch;
-			if( tuning.empty() ) { throw Writer::VectorEmptyException( "Tuning" ); }
+			if( tuning.empty() ) { throw Base::VectorEmptyException( "Tuning", "RSXML::Writer::WriteGuitar" ); }
 			for( auto it = tuning.begin(); it != tuning.end(); ++it ) {
 				write << "string" << it - tuning.begin() << "=\"" 
 				<< *it - Base::aTuning[ Base::eTuning::STANDARD_E ].pitch[ it - tuning.begin() ]
 				<< "\" ";
 			}
-		} catch( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
-			write << "string0=\"52\" string1=\"57\" string2=\"62\" string3=\"67\" string4=\"71\" string5=\"76\" ";
+		} catch( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; }
+			// write << "string0=\"52\" string1=\"57\" string2=\"62\" string3=\"67\" string4=\"71\" string5=\"76\" ";
+			write << "string0=\"0\" string1=\"0\" string2=\"0\" string3=\"0\" string4=\"0\" string5=\"0\" ";
 		}
 		write << "/>\n"
 		// Song metadata. Not sure how to grab this at present.
@@ -103,24 +109,24 @@ namespace RSXML {
 		// Phrases (aka Phrase Templates)
 		try {
 			auto& phrases = g.GetPhrases();
-			if( phrases.empty() ) { throw Writer::VectorEmptyException( "RSXML::PhraseTemplate" ); }
+			if( phrases.empty() ) { throw Base::VectorEmptyException( "RSXML::PhraseTemplate", "RSXML::Writer::WriteStructure", 112 ); }
 			write << "\t<phrases count=\"" << phrases.size() << "\">\n";
 			for( auto& p : phrases ) { write << p.ToXML(); }
 			write << "\t</phrases>\n";
-		} catch ( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
+		} catch ( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; }
 			write << "\t<phrases count=\"" << 0 << "\" />\n";
 		}
 
 		// Phrase Iterations
 		try {
 			auto& phraseIt = g.GetPhraseIterations();
-			if( phraseIt.empty() ) { throw Writer::VectorEmptyException( "RSXML::Phrase" ); }
+			if( phraseIt.empty() ) { throw Base::VectorEmptyException( "RSXML::Phrase", "RSXML::Writer::WriteStructure", 124 ); }
 			write << "\t<phraseIterations count=\"" << phraseIt.size() << "\">\n";
 			for( auto& pI : phraseIt ) { write << pI.ToXML(); }
 			write << "\t</phraseIterations>\n";
-		} catch( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
+		} catch( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; }
 			write << "\t<phraseIterations count=\"" << 0 << "\" />\n";
 		}
 		
@@ -133,12 +139,12 @@ namespace RSXML {
 		// Chord Templates
 		try {
 			auto& chords = g.GetChordTemplates();
-			if( chords.empty() ) { throw Writer::VectorEmptyException( "RSXML::ChordTemplate" ); }
+			if( chords.empty() ) { throw Base::VectorEmptyException( "RSXML::ChordTemplate", "RSXML::Writer::WriteStructure", 142 ); }
 			write << "\t<chordTemplates count=\"" << chords.size() << "\">\n";
 			for( auto& t : chords ) { write << t.ToXML(); }
 			write << "\t</chordTemplates>\n";
-		} catch( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
+		} catch( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; }
 			write << "\t<chordTemplates count=\"" << 0 << "\" />\n";
 		}
 		
@@ -149,36 +155,36 @@ namespace RSXML {
 		// Events
 		try {
 			auto& events = g.GetEvents();
-			if( events.empty() ) { throw Writer::VectorEmptyException( "RSXML::Event" ); }
+			if( events.empty() ) { throw Base::VectorEmptyException( "RSXML::Event", "RSXML::Writer::WriteStructure", 158 ); }
 			write << "\t<events count=\"" << events.size() << "\">\n";
 			for( auto& e : events ) { write << e.ToXML(); }
 			write << "\t</events>\n";
-		} catch( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
+		} catch( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; }
 			write << "\t<events count=\"" << 0 << "\" />\n";
 		}
 		
 		// Beat Grid
 		try {
 			auto& beats = g.GetBeats();
-			if( beats.empty() ) { throw Writer::VectorEmptyException( "RSXML::Beat" ); }
+			if( beats.empty() ) { throw Base::VectorEmptyException( "RSXML::Beat", "RSXML::Writer::WriteStructure", 170 ); }
 			write << "\t<ebeats count=\"" << beats.size() << "\">\n";
 			for(auto& b : beats) { write << b.ToXML(); }
 			write << "\t</ebeats>\n";
-		} catch( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
+		} catch( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; }
 			write << "\t<something count=\"" << 0 << "\" />\n";
 		}
 		
 		// Sections
 		try {
 			auto& sections = g.GetSections();
-			if( sections.empty() ) { throw Writer::VectorEmptyException( "RSXML::Section" ); }
+			if( sections.empty() ) { throw Base::VectorEmptyException( "RSXML::Section", "RSXML::Writer::WriteStructure", 182 ); }
 			write << "\t<sections count=\"" << sections.size() << "\">\n";
 			for(auto& s : sections) { write << s.ToXML(); }
 			write << "\t</sections>\n";
-		} catch( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
+		} catch( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; }
 			write << "\t<something count=\"" << 0 << "\" />\n";
 		}
 		
@@ -190,7 +196,7 @@ namespace RSXML {
 		std::stringstream write("");
 		const std::vector<Difficulty>& difficulties = g.GetDifficulties();
 		try {
-			if( difficulties.empty() ) { throw Writer::VectorEmptyException( "Difficulty" ); }
+			if( difficulties.empty() ) { throw Base::VectorEmptyException( "Difficulty", "RSXML::Writer::WriteDifficulties" ); }
 			/* Transcription Track -- whatever that is. It seems to be one full difficulty of a song. Maybe max? */	
 			Difficulty transcription( difficulties.back(), true );
 			write << WriteDifficulty( transcription );
@@ -199,8 +205,8 @@ namespace RSXML {
 			for( auto it = difficulties.begin(); it != difficulties.end(); ++it )
 				{ write << WriteDifficulty( *it ); } 
 			write << "\t</levels>\n";
-		} catch( Writer::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n"; 
+		} catch( Base::VectorEmptyException e ) {
+			if( debug ) { std::cerr << e.what() << "\n"; } 
 			write << "\t<levels count=\"" << 0 << "\" />\n";
 		}
 		return write.str();
@@ -241,11 +247,20 @@ namespace RSXML {
 			float end = 0.000f; 
 			if( it != (phraseIt.end() - 1) ) { end = (it + 1)->GetTime(); }
 			else { end = d.GetLength(); }
+
+			std::vector<RSXML::Note> notes;
+			std::vector<RSXML::Chord> chords;
+			std::vector<RSXML::Anchor> anchors;
+			std::vector<RSXML::HandShape> hands;
 			
-			auto& notes( GetLevelObjectsFromIndexesWithinTime( nSource, nIndex, start, end ) );
-			auto& chords( GetLevelObjectsFromIndexesWithinTime( cSource, cIndex, start, end ) );
-			auto& ans( GetLevelObjectsFromIndexesWithinTime( aSource, aIndex, start, end ) );
-			auto& hands( GetLevelObjectsFromIndexesWithinTime( hSource, hIndex, start, end ) );
+			try { notes = GetLevelObjectsFromIndexesWithinTime( nSource, nIndex, start, end ); }
+			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Note error: " << e.what() << "\n"; } }
+			try { chords = GetLevelObjectsFromIndexesWithinTime( cSource, cIndex, start, end ); }
+			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Chord error: " << e.what() << "\n"; } }
+			try { anchors = GetLevelObjectsFromIndexesWithinTime( aSource, aIndex, start, end ); }
+			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Anchor error: " << e.what() << "\n"; } }
+			try { hands = GetLevelObjectsFromIndexesWithinTime( hSource, hIndex, start, end ); }
+			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::HandShape error: " << e.what() << "\n"; } }
 
 			RSXML::PhraseTemplate p = arrangement.GetPhrases().at( it->GetPhraseID() );
 			if( d.IsTranscription() || d.GetIndex() <= p.GetMaxDifficulty() ) { 
@@ -253,8 +268,8 @@ namespace RSXML {
 				nSize += notes.size();
 				for( const Chord& c : chords ) { cS << t << c.ToXML(); }
 				cSize += chords.size();
-				for( const Anchor& a : ans ) { aS << t << a.ToXML(); }
-				aSize += ans.size();
+				for( const Anchor& a : anchors ) { aS << t << a.ToXML(); }
+				aSize += anchors.size();
 				for( const HandShape& h : hands ) { hS << t << h.ToXML(); }
 				hSize += hands.size();
 			}
@@ -291,10 +306,13 @@ namespace RSXML {
 	// Converts Base::Lyric vector to RSXML::Lyric vector.
 	const std::vector<RSXML::Lyric> Writer::ConvertARR2RSXMLLyrics( const std::vector<Base::Lyric> source ) const {
 		std::vector<RSXML::Lyric> dest;
-		for( auto& oldLyric : source ) { 
-			RSXML::Lyric newLyric( oldLyric ); 
-			dest.push_back( newLyric );
-		}
+		try {
+			if( source.empty() ) { throw Base::VectorEmptyException( "Base::Lyric", "RSXML::Writer::ConvertARR2RSXMLLyrics" ); }
+			for( auto& oldLyric : source ) { 
+				RSXML::Lyric newLyric( oldLyric ); 
+				dest.push_back( newLyric );
+			}
+		} catch( Base::VectorEmptyException e ) { if( debug ) { std::cerr << e.what() << "\n"; } }
 		return dest;
 	}
 };

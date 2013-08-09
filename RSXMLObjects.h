@@ -11,37 +11,35 @@
 #include <sstream>
 #include <vector>
 
+#define DEFAULTANCHORWIDTH 4.000f
+
 namespace RSXML {
 	template<class X>
 	const std::vector<X> GetLevelObjectsWithinTime( std::vector<X> source, float start, float end ) {
 		std::vector<X> dest;
-		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "Source" ); }
-			for(auto& x : source) { 
-				if( source.size() > x.GetIndex() ) {
-					if( x.GetTime() >= end ) { break; }
-					if( x.GetTime() >= start )
-						{ dest.push_back( x ); }
-				} else { break; }
-			}
-		} catch( Base::VectorEmptyException e ) { std::cerr << e.what() << "\n"; }
+		if( source.empty() ) { throw Base::VectorEmptyException( "Source", "RSXML::GetLevelObjectsWithinTime" ); }
+		for(auto& x : source) { 
+			if( source.size() > x.GetIndex() ) {
+				if( x.GetTime() >= end ) { break; }
+				if( x.GetTime() >= start )
+					{ dest.push_back( x ); }
+			} else { break; }
+		}
 		return dest;
 	}
 
 	template <class X>
 	const std::vector<X> GetLevelObjectsFromIndexesWithinTime( std::vector<X> xSource, std::vector<unsigned int> iSource, float a, float b ) {
 		std::vector<X> x;
-		try {
-			if( xSource.empty() ) { throw Base::VectorEmptyException( "Source" ); }
-			else if( iSource.empty() ) { throw Base::VectorEmptyException( "Index" ); }
-			for(auto& i : iSource) { 
-				if( xSource.size() > i ) {
-					if( xSource.at( i ).GetTime() >= b ) { break; }
-					if( xSource.at( i ).GetTime() >= a )
-						{ x.push_back( xSource.at( i ) ); }
-				} else { break; }
-			}
-		} catch( Base::VectorEmptyException e ) { /* std::cerr << e.what() << "\n"; */ }
+		if( xSource.empty() ) { throw Base::VectorEmptyException( "Source", "RSXML::GetLevelObjectsFromIndexesWithinTime" ); }
+		else if( iSource.empty() ) { throw Base::VectorEmptyException( "Index", "RSXML::GetLevelObjectsFromIndexesWithinTime" ); }
+		for(auto& i : iSource) { 
+			if( xSource.size() > i ) {
+				if( xSource.at( i ).GetTime() >= b ) { break; }
+				if( xSource.at( i ).GetTime() >= a )
+					{ x.push_back( xSource.at( i ) ); }
+			} else { break; }
+		}
 		return x;
 	}
 	
@@ -54,10 +52,30 @@ namespace RSXML {
 	
 	class LevelObject {
 		public:
-			LevelObject( const unsigned int& ind = 0 ) 
-				: index( ind ) { };
+			LevelObject( const unsigned int& index = 0 ) : index( index ) { };
 			
 			const unsigned int& 	GetIndex() const { return index; };
+
+			class IndexRangeError {
+				public:
+					IndexRangeError( std::string vectorType, std::string location = "", unsigned int lineNumber = 0 ) 
+						: vectorType( vectorType ), location( location ), lineNumber( lineNumber ) { };
+
+					std::string				what() const throw() { 
+						std::string buffer = "RSXML Error: Index not within bounds for " + vectorType + " vector";
+						if( location != "" ) { 
+							buffer += " in "; buffer += location; 
+							if( lineNumber != 0 ) { buffer += " at line " ; buffer += (unsigned int)lineNumber; }
+						} 
+						buffer += ".";
+						return buffer.c_str();
+					};
+
+				private:
+					const std::string		vectorType;
+					const std::string		location;
+					unsigned int			lineNumber;
+			};
 
 		protected:
 			unsigned int			index;

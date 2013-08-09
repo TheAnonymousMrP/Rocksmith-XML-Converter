@@ -11,7 +11,10 @@ namespace RSXML {
 		Guitar rsg( arrg.GetDuration(), arrg.GetName(), arrg.IsBass() );
 
 		// Global/meta data.
+		rsg.SetTempos( arrg.GetTempos() );
 		rsg.SetBeats( CreateBeats( arrg ) );
+		// Converts pre-existing anchors. See line 34 onwards if none exist.
+		if( !arrg.GetAnchors().empty() ) { rsg.SetAnchors( ConvertAnchors( arrg.GetAnchors() ) ); }
 		rsg.SetEvents( ConvertEvents( arrg.GetEvents() ) );
 		// We handle phrases later because of the maxDifficulty value.
 		// Sections
@@ -25,13 +28,20 @@ namespace RSXML {
 		ConvertARR2RSXMLChords( arrg.GetChords(), cTemplates, chords, rsg.tuning, rsg.GetNotes() );
 		rsg.SetChordTemplates( cTemplates );
 		rsg.SetChords( chords );
-		// Anchors
-
-		// HandShapes
-
 
 		// Difficulty
-		rsg.SetDifficulties( ConvertARR2RSXMLDifficulty( arrg.GetDifficulties() ) );
+		std::vector<RSXML::Difficulty> difficulties = ConvertARR2RSXMLDifficulty( arrg.GetDifficulties() );
+			// Anchors
+			if( arrg.GetAnchors().empty() ) {
+				std::vector<RSXML::Anchor> anchors;
+				CreateAnchors( anchors, difficulties, rsg.GetNotes(), rsg.GetChords() ); 
+				rsg.SetAnchors( anchors );
+			}
+			// HandShapes
+			std::vector<RSXML::HandShape> handShapes;
+			CreateHandShapes( handShapes, difficulties, rsg.GetChords(), rsg.GetChordTemplates() );
+			rsg.SetHandShapes( handShapes );
+		rsg.SetDifficulties( difficulties );
 
 		// Phrases
 		std::vector<RSXML::PhraseTemplate> pTemplates;
@@ -49,8 +59,8 @@ namespace RSXML {
 		try {
 			const std::vector<Base::Tempo>& tempos( g.GetTempos() );
 			const std::vector<Base::TimeSig>& timeSigs( g.GetTimeSigs() );
-			if( tempos.empty() ) { throw Base::VectorEmptyException( "Tempo" ); } 
-			else if( g.GetTimeSigs().empty() ) { throw Base::VectorEmptyException( "Time Signature" ); }
+			if( tempos.empty() ) { throw Base::VectorEmptyException( "Tempo", "RSXML::CreateGuitar::CreateBeats" ); } 
+			else if( g.GetTimeSigs().empty() ) { throw Base::VectorEmptyException( "Time Signature", "RSXML::CreateGuitar::CreateBeats" ); }
 
 			std::vector<Base::Tempo>::const_iterator tempoIt = tempos.begin();
 			std::vector<Base::TimeSig>::const_iterator timeSigIt = timeSigs.begin();
@@ -90,17 +100,31 @@ namespace RSXML {
 		}
 		return beats;
 	};
-	
+
+	// Converts pre-existing anchors (Base::MetaUInt) to RSXML::Anchor vector.
+	const std::vector<RSXML::Anchor> CreateGuitar::ConvertAnchors( const std::vector<Base::MetaUInt>& source ) {
+		std::vector<RSXML::Anchor> dest;
+		try {
+			if( source.empty() ) { throw Base::VectorEmptyException( "Base::Anchor", "RSXML::CreateGuitar::ConvertAnchors" ); }
+			for( auto& e : source ) { 
+				dest.push_back( RSXML::Anchor( e.GetTime(), e.GetUInt(), DEFAULTANCHORWIDTH, dest.size() ) );
+			}
+		} catch( Base::VectorEmptyException e ) { 
+			if( debug ) { std::cerr << e.what() << "\n"; } 
+		}
+		return dest;
+	}
+
 	// Creates RSXML::Event vector from Base::MetaString vector.
 	const std::vector<RSXML::Event>	CreateGuitar::ConvertEvents( const std::vector<Base::MetaString>& source ) { 
 		std::vector<RSXML::Event> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "RSXML::Event" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "Base::Event", "RSXML::CreateGuitar::ConvertEvents" ); }
 			for( auto& e : source ) { 
 				dest.push_back( RSXML::Event( e.GetTime(), e.GetString() ) );
 			}
 		} catch( Base::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
+			if( debug ) { std::cerr << e.what() << "\n"; }
 		}
 		return dest;
 	}
@@ -109,7 +133,7 @@ namespace RSXML {
 	void CreateGuitar::ConvertARR2RSXMLPhrases( const std::vector<ARR::Phrase>& source, 
 		std::vector<RSXML::PhraseTemplate>& temp, std::vector<RSXML::Phrase>& phrase, const std::vector<RSXML::Note>& notes ) { 
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "Phrase" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Phrase", "RSXML::CreateGuitar::ConvertARR2RSXMLPhrases" ); }
 			for( auto& p : source ) {
 				unsigned int phraseID = 0;
 				if( !temp.empty() ) {
@@ -123,7 +147,10 @@ namespace RSXML {
 				}
 				if( phraseID == temp.size() ) {	
 					unsigned int maxDifficulty = 0;
-					auto phraseNotes = GetLevelObjectsWithinTime( notes, p.GetTime(), p.GetTime() + p.GetDuration() );
+					std::vector<RSXML::Note> phraseNotes;
+					try {
+						phraseNotes = GetLevelObjectsWithinTime( notes, p.GetTime(), p.GetTime() + p.GetDuration() );
+					} catch( Base::VectorEmptyException e ) { if( debug ) { std::cerr << e.what() << "\n"; } }
 					for( auto& n : phraseNotes ) { if( n.normalisedDifficulty > maxDifficulty ) { maxDifficulty = n.normalisedDifficulty; } }
 					RSXML::PhraseTemplate newTemplate( p.name, maxDifficulty, false, false, false, phraseID ); 
 					temp.push_back( newTemplate );
@@ -147,7 +174,7 @@ namespace RSXML {
 	const std::vector<RSXML::Section> CreateGuitar::ConvertARR2RSXMLSections( const std::vector<ARR::Section>& source ) { 
 		std::vector<RSXML::Section> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Section" ); } 
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Section", "RSXML::CreateGuitar::ConvertARR2RSXMLSections" ); } 
 			for( auto& arr : source ) {
 				unsigned int iteration = 1;
 				// Compare by name to previous sections.
@@ -168,7 +195,7 @@ namespace RSXML {
 		// At present, ARR and RSXML notes are the same. This may not be the case in the future.
 		std::vector<RSXML::Note> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Note" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Note", "RSXML::CreateGuitar::ConvertARR2RSXMLNotes" ); }
 			for( auto& arr : source ) {	
 				RSXML::Note rsxml( arr );
 				dest.push_back( rsxml );
@@ -185,8 +212,8 @@ namespace RSXML {
 	void CreateGuitar::ConvertARR2RSXMLChords( const std::vector<ARR::Chord>& source, std::vector<RSXML::ChordTemplate>& temp, 
 		std::vector<RSXML::Chord>& chord, const Base::Tuning& tuning, const std::vector<RSXML::Note>& notes ) {
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Chord" ); }
-			if( notes.empty() ) { throw Base::VectorEmptyException( "ARR::Note" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Chord", "RSXML::CreateGuitar::ConvertARR2RSXMLChords" ); }
+			if( notes.empty() ) { throw Base::VectorEmptyException( "ARR::Note", "RSXML::CreateGuitar::ConvertARR2RSXMLChords" ); }
 			for( auto& arr : source ) {
 				// We need to compare the generate templates here.
 				unsigned int chordTemplate = 0;
@@ -229,16 +256,16 @@ namespace RSXML {
 				chord.push_back( rsxml );
 			}
 		} catch( Base::VectorEmptyException e ) {
-			std::cerr << e.what() << "\n";
-		} catch( std::exception e ) { std::cerr << e.what() << "\n"; }
+			if( debug ) { std::cerr << e.what() << "\n"; }
+		} catch( std::exception e ) { if( debug ) { std::cerr << e.what() << "\n"; } }
 		// std::cerr << "Chords: " << chord.size() << " \tTemplates: " << temp.size() << "\n";
 	}
 
-	// Converts ARR::Difficulty vector into RSXML::Difficulty vector.
+	// Converts ARR::Difficulty vector into RSXML::Difficulty vector. Additionally creates anchors if none already exist.
 	const std::vector<RSXML::Difficulty> CreateGuitar::ConvertARR2RSXMLDifficulty( const std::vector<ARR::Difficulty>& source ) {
 		std::vector<RSXML::Difficulty> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Difficulty" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Difficulty", "RSXML::CreateGuitar::ConvertARR2RSXMLDifficulty" ); }
 			for( auto& arr : source ) {	
 				RSXML::Difficulty rsxml( arr.GetLength(), arr.GetDifficulty() );
 				rsxml.SetNotesIndex( arr.GetNotesIndex() );
@@ -259,4 +286,176 @@ namespace RSXML {
 		return dest;
 	}
 
+	// Creates RSXML::Anchor vector algorithmicly. Processed after difficulties are created.
+	void CreateGuitar::CreateAnchors( std::vector<RSXML::Anchor>& anchors, 
+		std::vector<RSXML::Difficulty>& difficulties, const std::vector<RSXML::Note>& notes, const std::vector<RSXML::Chord>& chords ) {
+		try {
+			if( difficulties.empty() ) { throw Base::VectorEmptyException( "RSXML::Difficulty", "RSXML::CreateGuitar::CreateAnchors" ); }
+			if( notes.empty() ) { throw Base::VectorEmptyException( "RSXML::Note", "RSXML::CreateGuitar::CreateAnchors" ); }
+			if( chords.empty() ) { throw Base::VectorEmptyException( "RSXML::Chord", "RSXML::CreateGuitar::CreateAnchors" ); }
+
+			/* The aim is to:
+				- Scroll through the full notes vector to find suitable points to place an anchor.
+				- Identify which anchors are relevant per difficulty.
+
+				Possible method:
+				- Produce an anchor per note (excluding repeated frets/pitches) in a buffer.
+				- Identify anchors per difficulty, only adding those to the final anchor vector.
+					- Chords should get their own anchor, or at least should if the width extends 
+					beyond the width of the pre-existing anchor.
+					- Will need to process chords separately and sort them into the main index after.
+				- Working from most-to-least difficulty could provide a more logical indexing 
+				order, which == profit???
+				Advantage: By starting with more than needed, a situation where two difficulties
+				have massively conflicting anchors are avoided. 
+				Optional Development: On stage 2, identify the appropriate anchor width. */
+			std::vector<RSXML::Anchor> buffer;
+			buffer.push_back( RSXML::Anchor() );
+			RSXML::Note lastNote( -1.000f );
+			for( std::vector<RSXML::Note>::const_iterator it = notes.begin(); it != notes.end(); ++it ) {
+				if( it->GetTime() != lastNote.GetTime() || it->GetFret() != lastNote.GetFret() ) {
+					buffer.push_back( RSXML::Anchor( it->GetTime(), it->GetFret(), DEFAULTANCHORWIDTH, buffer.size() ) );
+				}
+			}
+			if( buffer.empty() ) { throw Base::VectorEmptyException( "RSXML::Anchor", "RSXML::CreateGuitar::CreateAnchors" ); }
+
+			for( std::vector<RSXML::Difficulty>::reverse_iterator it = difficulties.rbegin(); it != difficulties.rend(); ++it ) {
+				std::vector<unsigned int> bufferIndexNotes;
+				std::vector<unsigned int> bufferIndexChords;
+		
+				// Scan notes index.
+				try {
+					// if( it->GetNotesIndex().empty() ) { throw Base::VectorEmptyException( "Difficulty::NoteIndexes", "RSXML::CreateGuitar::CreateAnchors" ); }
+					const std::vector<unsigned int>& indexes = it->GetNotesIndex();
+					
+					// No need to redundantly search the anchor buffer vector.
+					std::vector<RSXML::Anchor>::iterator anchorIterator = buffer.begin();
+					RSXML::Anchor lastAnchor( -1.000f, 0xFF, DEFAULTANCHORWIDTH, 0 );
+					unsigned char lastFret( lastAnchor.GetFret() ); 
+					
+					for( std::vector<unsigned int>::const_iterator jt = indexes.begin(); jt != indexes.end(); ++jt ) {
+						if( *jt >= notes.size() ) { throw RSXML::LevelObject::IndexRangeError( "RSXML::Note", "CreateGuitar::CreateAnchor" ); }
+						const RSXML::Note currentNote( notes.at( *jt ) );
+						const unsigned char currentFret( currentNote.GetFret() );
+
+						if( currentFret != lastFret && currentFret != 0 ) {
+							if( ( currentFret < lastFret ) || ( currentFret >= ( lastFret + lastAnchor.GetWidth() ) ) ) {
+								// Scan buffer for relevant anchor.
+								for( auto kt = anchorIterator; kt != buffer.end(); ++kt ) {
+									if( currentNote.GetTime() == kt->GetTime() ) { 
+										bufferIndexNotes.push_back( kt->GetIndex() ); 
+										anchorIterator = kt;
+										kt = buffer.end() - 1;
+									}
+								}
+								lastFret = currentFret;
+								lastAnchor = *anchorIterator;
+							}	
+						} 
+					}
+				} catch( RSXML::LevelObject::IndexRangeError e ) { if( debug ) { std::cerr << e.what() << "\n"; } }
+
+				// Scan Chords index.
+				try {
+					const std::vector<unsigned int>& indexes = it->GetChordsIndex();
+					// if( indexes.empty() ) { throw Base::VectorEmptyException( "Difficulty::ChordIndexes", "RSXML::CreateGuitar::CreateAnchors" ); }
+
+					// No need to redundantly search the anchor buffer vector.
+					std::vector<RSXML::Anchor>::iterator anchorIterator = buffer.begin();
+					RSXML::Anchor lastAnchor( -1.000f, 0xFF, DEFAULTANCHORWIDTH, 0 );
+					unsigned char lastLowFret( lastAnchor.GetFret() ); 
+					unsigned char lastHighFret( 0 );
+
+					for( std::vector<unsigned int>::const_iterator jt = indexes.begin(); jt != indexes.end(); ++jt ) {
+						if( *jt >= chords.size() ) { throw RSXML::LevelObject::IndexRangeError( "RSXML::Chord", "CreateGuitar::CreateAnchor" ); }
+						const RSXML::Chord currentChord( chords.at( *jt ) );
+						unsigned char lowFret = 0xFF;
+						unsigned char highFret = 0;
+						for( auto& i : currentChord.GetNotesIndex() ) { 
+							if( i != CHORDERROR ) {
+								if( notes.at( i ).GetFret() < lowFret && notes.at( i ).GetFret() != 0 ) { lowFret = notes.at( i ).GetFret(); }
+								if( notes.at( i ).GetFret() > highFret && notes.at( i ).GetFret() <= NUMFRETS ) { highFret = notes.at( i ).GetFret(); }
+							}
+						}
+						// Lowest fret cannot be 0; highest fret cannot exceed the maximum support fret.
+						if( lowFret == 0xFF && highFret == 0 ) {
+							// Accounting for a very unlikely scenario. Should only ever be the first index.
+							bufferIndexChords.push_back( anchorIterator->GetIndex() );
+							lastAnchor = *anchorIterator;
+						} else if( 
+							lowFret < lastLowFret ||
+							lowFret >= lastLowFret + lastAnchor.GetWidth() ||
+							( lowFret > lastLowFret && highFret >= lastLowFret + lastAnchor.GetWidth() ) 
+							) { 
+								// Scan buffer for relevant anchor.
+								for( auto kt = anchorIterator; kt != buffer.end(); ++kt ) {
+									if( currentChord.GetTime() == kt->GetTime() ) { 
+										bufferIndexChords.push_back( kt->GetIndex() ); 
+										anchorIterator = kt;
+										kt = buffer.end() - 1;
+									}
+								}
+								lastLowFret = lowFret;
+								lastHighFret = highFret;
+								lastAnchor = *anchorIterator;
+
+						} else if( lowFret == lastLowFret && highFret >= lowFret + lastAnchor.GetWidth() ) {
+							// When the anchor fret doesn't change yet the highest chord fret increases.
+							/* This scenario will require a new, larger-width anchor.
+							As variable-width anchors aren't yet implemented in Rocksmith, it will be ignored for now.
+							
+							Suggested implementation: 
+							- Second chord buffer.
+							- After sorting note buffer and primary chord buffer into combined buffer. 
+							- Insert (not sort) second chord buffer into combined buffer.
+
+							Alternatively:
+							- Second chord buffer ( could use vector<array<index,width>> ).
+							- After sorting note & chord & second chord buffer into final combined index vector.
+							- Create second RSXML::Anchor buffer, copying 1-to-1 from the first, changing the 
+							anchor width by cross-referencing indexes with second chord buffer. 
+								- This could cause cross-difficulty conflicts, however. That said, because 
+								anchor width is mostly an aesthetic feature, it's not the end of the world,
+								though admittedly potentially confusing and not in the spirit of things. */
+						}
+					}
+				} catch( RSXML::LevelObject::IndexRangeError e ) { if( debug ) { std::cerr << e.what() << "\n"; } }
+
+				// Sort note & chord buffers.
+				std::vector<unsigned int> bufferIndex = bufferIndexNotes;
+				for( auto& i : bufferIndexChords ) { bufferIndex.push_back( i ); }
+				sort( bufferIndex.begin(), bufferIndex.end() );
+
+				it->SetAnchorsIndex( bufferIndex );
+			}
+
+			anchors = buffer;
+		} catch( Base::VectorEmptyException e ) { if( debug ) { std::cerr << e.what() << "\n"; } }
+
+		if( anchors.empty() ) {
+			RSXML::Anchor badAnchor;
+			anchors.push_back( badAnchor );
+			std::vector<unsigned int> index;
+			index.push_back( 0 );
+			for( auto& d : difficulties ) { d.SetAnchorsIndex( index ); }
+		}
+	}
+	
+	// Creates RSXML::HandShape vector algorithmicly. Processed after difficulties are created.
+	void CreateGuitar::CreateHandShapes( std::vector<RSXML::HandShape>& handShapes, std::vector<RSXML::Difficulty>& difficulties,
+		const std::vector<RSXML::Chord>& chords, const std::vector<RSXML::ChordTemplate>& templates ) {
+		try {
+			if( chords.empty() ) { throw Base::VectorEmptyException( "RSXML::Chord", "CreateGuitar::CreateHandShapes" ); }
+			if( difficulties.empty() ) { throw Base::VectorEmptyException( "RSXML::Difficulty", "CreateGuitar::CreateHandShapes" ); }
+
+		} catch( Base::VectorEmptyException e ) { if( debug ) { std::cerr << e.what() << "\n"; } }
+
+		if( handShapes.empty() ) {
+			RSXML::HandShape badHand( 0.000f, 0, 0.000f, 0 );
+			handShapes.push_back( badHand );
+			std::vector<unsigned int> index;
+			index.push_back( 0 );
+			for( auto& d : difficulties ) { d.SetHandShapesIndex( index ); }
+		}
+	}
 }

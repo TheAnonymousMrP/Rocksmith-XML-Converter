@@ -16,15 +16,15 @@
 namespace ARR { 
 	class CreateVocals {
 		public:
-			CreateVocals() { };
+			CreateVocals( const bool& debug = false ) : debug( debug ) { };
 			
 			const Vocals Create( const MIDI::Track& t, std::string ext = "" );
 			
 		private:	
-			const std::vector<Base::MetaString> 
-				GetExternalWords( std::string fileName );
-			const std::vector<Base::Lyric>	
-				CreateLyrics( const std::vector<MIDI::Note>& notes, const std::vector<Base::MetaString>& words, bool ext = 0 );
+			const bool								debug;
+
+			const std::vector<Base::MetaString>		GetExternalWords( std::string fileName );
+			const std::vector<Base::Lyric>			CreateLyrics( const std::vector<MIDI::Note>& notes, const std::vector<Base::MetaString>& words, bool ext = 0 );
 	};
 	
 	const Vocals CreateVocals::Create( const MIDI::Track& t, std::string ext ) {

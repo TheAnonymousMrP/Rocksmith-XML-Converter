@@ -2,10 +2,6 @@
 #include "MIDIObjects.h"
 #endif
 
-#ifndef DEBUG_STUFF
-#include "debug.h"
-#endif
-
 namespace MIDI {
 	float ConvertDelta2Time( const unsigned int& delta, const unsigned int& division, const float& tempo ) {
 		float length = (float)delta / (float)division;
@@ -28,7 +24,6 @@ namespace MIDI {
 	
 	float ConvertSMPTE2Time( const std::vector<unsigned char>& b, const int& division ) {
 		float time = 0;
-		// time += (b.at(0) * 60);
 		time += b.at(1);
 		time += ( b.at(2) / division );
 		time += ( ( b.at(3) / 100 ) / division );

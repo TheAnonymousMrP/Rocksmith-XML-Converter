@@ -7,9 +7,8 @@
 namespace MIDI {
 	class ReaderDefault : public MIDI::Reader {
 		public:
-			ReaderDefault( const std::string& file ) : MIDI::Reader( file ) { };
-			/* void debug(); Will generate a file listing the contents of the 
-			pulled tracks. For debug purposes. */
+			ReaderDefault( const std::string& fileName, const float& startOffset = 0.000f, const bool& debug = false ) 
+				: MIDI::Reader( fileName, startOffset, debug ) { };
 		
 		private:
 			unsigned int 		ProcessNote( unsigned int it, const float& timer, MIDI::Track& track, unsigned char c = 0 );
