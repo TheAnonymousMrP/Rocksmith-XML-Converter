@@ -9,8 +9,6 @@
 #include "BaseMeta.h"
 #endif
 
-#include <array>
-#include <string>
 #include <vector>
 
 #define CHORDERROR 65365
@@ -74,23 +72,24 @@ namespace Base {
 	class Guitar : public Base::Arrangement {
 		public:
 			Guitar( const float& duration = 0.000f, const std::string& name = "", const bool& isBass = false ) 
-				: Arrangement( duration, name ), tuning( Base::aTuning[eTuning::STANDARD_E] ) { bass = isBass; };
+				: Arrangement( duration, name ), tuning( Base::aTuning[eTuning::STANDARD_E] ), bass( isBass ) { };
 			Guitar( const Guitar& g ) : Arrangement( g ), tuning( g.tuning ), 
 				bass( g.bass ), tempos( g.tempos ), timeSigs( g.timeSigs ) { };
 			
 			Base::Tuning					tuning;
+			unsigned int					quantize;
 			
+			const bool& IsBass() const { return bass; };
 			const std::vector<Base::Tempo>&	GetTempos() const { return tempos; };
 			const std::vector<Base::TimeSig>& GetTimeSigs() const { return timeSigs; };
 			
-			const bool&						IsBass() const { return bass; };
-			
+			void	SetAsBass( const bool& isBass = true ) { bass = isBass; };
 			void	SetTempos( const std::vector<Base::Tempo>& v ) { tempos = v; };
 			void	SetTimeSigs( const std::vector<Base::TimeSig>& v ) { timeSigs = v; };
 		
-		protected:
-			bool							bass;	
-			
+		protected:		
+			bool							bass;
+
 			std::vector<Base::Tempo>		tempos;
 			std::vector<Base::TimeSig>		timeSigs;
 	};

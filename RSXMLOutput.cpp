@@ -12,7 +12,7 @@ namespace RSXML {
 		return ss.str();
 	};
 
-	const std::string Note::ToXML( const bool& chord ) const {
+	const std::string Note::ToXML( const float& quantize, const bool& chord ) const {
 		/* Shit's getting real, and everything is subject to change. My bet is
 		Rocksmith 2, but fuck me if they shouldn't wait for next-gen. Of course,
 		it could just be shit for in-game videos, but whatever.
@@ -26,9 +26,12 @@ namespace RSXML {
 		'mute' could be a replacement for the unimplemented fretHandMutes. */
 		std::stringstream ss("");
 
-		if(chord) { ss << "\t\t<chordN"; }
+		if( chord ) { ss << "\t\t<chordN"; }
 		else { ss << "\t<n"; }
-		ss << "ote time=\"" << time << "\" sustain=\"" << duration << "\" string=\"" 
+		ss << "ote time=\"" << time << "\" ";
+		ss << "sustain=\"";
+		if( duration <= quantize ) { ss << 0; } else { ss << duration; }
+		ss << "\" string=\"" 
 		<< (unsigned int)string << "\" fret=\"" << (unsigned int)fret << "\" ignore=\"" 
 		<< values[eValues::IGNORE] 
 		<< "\" linkNext=\"" << (unsigned int)values[eValues::LINKNEXT] 
@@ -38,7 +41,7 @@ namespace RSXML {
 		<< "\" hammerOn=\"" << values[eValues::HOPO_ON] 
 		<< "\" pullOff=\"" << values[eValues::HOPO_OFF] 
 		<< "\" palmMute=\"" << values[eValues::PALMMUTE] 
-		<< "\" slideTo=\""; ( slide ) ? ss << slide : ss << -1; 
+		<< "\" slideTo=\""; ( slide ) ? ss << (unsigned int)slide : ss << -1; 
 		ss << "\" tremolo=\"" << values[eValues::TREMOLO]
 		// New stuff
 		<< "\" accent=\"" << values[eValues::ACCENT] 

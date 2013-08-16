@@ -182,7 +182,7 @@ namespace MIDI {
 			++it;
 			c = memblock[it];
 			if( c == 0x2F ) { it += 2; }
-			return ProcessMeta( it, timer, track ); 
+			return ProcessMeta( it, timer, track );
 		} else if( c == 0xF0 || c == 0xF7 ) {
 			// SysEx. Not used by us. Because they are variable length, we're
 			// kind of fucked until I bother do this shit.

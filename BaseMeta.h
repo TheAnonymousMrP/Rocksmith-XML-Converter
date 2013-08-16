@@ -2,8 +2,8 @@
 #define BASE_META
 
 #include <array>
-#include <string>
 #include <exception>
+#include <string>
 
 #define DEFAULTTEMPO 120.000f
 #define ONEMINUTE 60.000f
@@ -128,12 +128,12 @@ namespace Base {
 	
 	class Tempo : public Base::Meta {
 		public:
-			Tempo( const float& tim = 0.000f, const float& val = 0.000f ) 
+			Tempo( const float& tim = 0.000f, const float& val = 120.000f ) 
 				: Base::Meta( Base::eMeta::TEMPO, tim ), value( val ) { };
 				
 			const float&			GetTempo() const { return value; };
 			float					Convert2Beat() const { return ONEMINUTE / value; };
-			
+									
 		private:
 			float					value;
 	

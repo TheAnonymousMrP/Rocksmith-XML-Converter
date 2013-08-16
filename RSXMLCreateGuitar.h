@@ -14,7 +14,7 @@ namespace RSXML {
 		public:
 			CreateGuitar( const bool& debug = false ) : debug( debug ) { };
 			
-			const RSXML::Guitar						Create( const ARR::Guitar& arrg, const bool& bass = 0 );
+			const RSXML::Guitar						Create( const ARR::Guitar& arrg );
 			
 		private:
 			const bool								debug;

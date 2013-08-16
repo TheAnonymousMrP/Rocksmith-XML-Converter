@@ -112,7 +112,6 @@ int main(int argc, char* argv[]) {
 			rsxml.WriteVocals( v );
 		}
 		else {
-			std::cout << "Track " << it - tracks.begin() << ": \n";
 			ARR::CreateGuitar ac( isDebug );
 			ARR::Guitar ag = ac.Create( *it );
 			std::cout << midiName << "-" << ag.GetName() << ".xml\n";

@@ -19,11 +19,9 @@ namespace RSXML {
 		std::vector<X> dest;
 		if( source.empty() ) { throw Base::VectorEmptyException( "Source", "RSXML::GetLevelObjectsWithinTime" ); }
 		for(auto& x : source) { 
-			if( source.size() > x.GetIndex() ) {
-				if( x.GetTime() >= end ) { break; }
-				if( x.GetTime() >= start )
-					{ dest.push_back( x ); }
-			} else { break; }
+			if( x.GetTime() >= end ) { break; }
+			if( x.GetTime() >= start )
+				{ dest.push_back( x ); }
 		}
 		return dest;
 	}
@@ -117,7 +115,7 @@ namespace RSXML {
 				
 			std::array<bool,eValues::size>	values;
 			
-			const std::string				ToXML( const bool& chord = false ) const;
+			const std::string				ToXML( const float& quantize = 0.000f, const bool& chord = false ) const;
 			
 	};
 	

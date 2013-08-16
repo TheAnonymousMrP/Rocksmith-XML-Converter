@@ -30,20 +30,24 @@ namespace ARR {
 	const Vocals CreateVocals::Create( const MIDI::Track& t, std::string ext ) {
 		std::vector<MIDI::Note> notes = t.GetNotes();
 		std::vector<Base::MetaString> words; 
-		if( ext == "" ) { words = GetExternalWords( ext ); } 
+		if( ext != "" ) { words = GetExternalWords( ext ); } 
 		else { words = t.GetMetaStrings( eMeta::LYRICS ); }
 		
-		std::vector<Base::Lyric> lyrics = CreateLyrics( notes, words, ( ext == "" ) );
+		std::vector<Base::Lyric> lyrics = CreateLyrics( notes, words, ( ext != "" ) );
 			
 		Vocals v( t.name, lyrics );
 		return v;
 	}
 	
-	const std::vector<Base::Lyric> CreateVocals::CreateLyrics( 
-		const std::vector<MIDI::Note>& notes, const std::vector<Base::MetaString>& words, 
-		bool ext )
-		{
+	const std::vector<Base::Lyric> CreateVocals::CreateLyrics( const std::vector<MIDI::Note>& notes, const std::vector<Base::MetaString>& words, bool ext ) {
 		std::vector<Base::Lyric> lyrics;
+		/* The offset of notes and words. Negative values mean there's
+		not enough notes. Positive values mean there's not enough words.
+		I don't believe having blank lyrics is fatal, but it should probably be 
+		avoided anyway. */
+		int offset = notes.size() - words.size();
+		if( debug && offset != 0 ) { std::cerr << "Vocal mismatch. Offset of " << offset << " note(s).\n"; }
+
 		if ( ext ) {
 			auto jt = words.begin();
 			for( auto it = notes.begin(); it != notes.end(); ++it, ++jt ) {
@@ -61,24 +65,14 @@ namespace ARR {
 						lastSuccess = jt; 
 						break; 
 					}
+					if( debug && ( jt == words.end() - 1 ) ) { std::cerr << "No word found at: " << n.GetTime() << "\n"; }
 				}
 			}
-		}
-				
-		/* The offset of notes and words. Negative values mean there's
-		not enough words. Positive values mean there's not enough notes.
-		I don't believe having blank lyrics is fatal, but it should probably be 
-		avoided anyway. */
-		int offset = notes.size() - words.size();
-		if( offset != 0 ) { 
-			std::cout << "Vocal mismatch. Offset of: " << offset << " notes.\n"; 
 		}
 		return lyrics;
 	}
 	
-	const std::vector<Base::MetaString> CreateVocals::GetExternalWords( 
-		std::string fileName ) 
-		{
+	const std::vector<Base::MetaString> CreateVocals::GetExternalWords( std::string fileName ) {
 		std::vector<Base::MetaString> words;
 		
 		fileName += ".txt";
@@ -86,32 +80,26 @@ namespace ARR {
 			<< "'. \n";
 		std::ifstream extlyrics;
 		extlyrics.open(fileName.c_str());
-		if( extlyrics.is_open() )
-			{
+		if( extlyrics.is_open() ) {
 			std::string line;
 			std::string buf; // Have a buffer string
 			std::stringstream ss;
 			
-			while(extlyrics.good())
-				{
+			while( extlyrics.good() ) {
 				getline(extlyrics,line);
 				ss.str(""); ss.clear();
 				ss.str(line); 
 				
-				while (ss >> buf)
-					{
+				while (ss >> buf) {
 					MetaString word( eMeta::LYRICS, 0.000f, buf );
 					words.push_back(word);
-					}
 				}
 			}
+		}
 		extlyrics.close();
 		
 		return words;
 	}
 };
-
-
-
 
 #endif

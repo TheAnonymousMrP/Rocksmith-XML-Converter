@@ -61,8 +61,8 @@ namespace RSXML {
 		};
 
 		public:
-			Guitar( const float& len = 0.000f, const std::string& nam = "", const bool& bas = false ) 
-				: Base::Guitar( len, nam, bas ) { };
+			Guitar( const float& length = 0.000f, const std::string& name = "", const bool& isBass = false ) 
+				: Base::Guitar( length, name, isBass ) { };
 			Guitar( const Guitar& g ) : Base::Guitar( g ), beats( g.beats ), 
 				chordTemplates( g.chordTemplates), events( g.events ), 
 				phrases( g.phrases ), phraseIterations( g.phraseIterations ),

@@ -3,6 +3,7 @@
 
 #include <array>
 #include <string>
+#include <iostream>
 
 #define NUMSTRINGS 6
 #define BASSSTRINGS 4
@@ -51,6 +52,13 @@ namespace Base {
 			{ "Standard Eb", { { 51, 56, 61, 66, 70, 75 } } },
 			{ "Open G", { { 50, 55, 62, 67, 71, 74 } } },
 		} };
+
+	const std::array<Tuning, 10> bTuning = { { 
+			{ "Standard E", { { 40, 45, 50, 55 } } },
+			{ "Drop D", { { 38, 45, 50, 55 } } },
+			{ "Standard Eb", { { 39, 44, 49, 54 } } },
+			{ "Open G", { { 38, 43, 50, 55, 59, 62 } } },
+		} };
 	
 	class GuitarNote : public Base::Note {
 		public:
@@ -72,6 +80,8 @@ namespace Base {
 			
 			void					SetFret( const Tuning& tun = aTuning[ eTuning::STANDARD_E ] ) { 
 										if( pitch != 0xFF ) { fret = pitch - tun.pitch[ string ]; }
+										/* std::cerr << "Pitch: " << (unsigned int)pitch << " String: " << (unsigned int)string << " Fret: " 
+											<< (unsigned int)fret << " Tuning: " << (unsigned int)tun.pitch[ string ] << "\n"; */
 									}
 			
 		protected:

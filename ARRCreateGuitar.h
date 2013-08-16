@@ -21,7 +21,7 @@ namespace ARR {
 		public:
 			CreateGuitar( const bool& debug = false ) : debug( debug ) { };
 			
-			const ARR::Guitar 				Create( const MIDI::Track& t, const bool& bass = false );
+			const ARR::Guitar 				Create( const MIDI::Track& t );
 			
 		private:
 			const bool						debug;
@@ -29,8 +29,8 @@ namespace ARR {
 			MIDI::Track						track;
 		
 			void 							ConvertSpecialMetas( ARR::Guitar& g ) const;
-			std::vector<ARR::Note>			ConvertMIDI2ARRNotes( std::vector<MIDI::Note> notes ) const;
-			void 							SetTechniques( std::vector<ARR::Note>& notes ) const;
+			std::vector<ARR::Note>			ConvertMIDI2ARRNotes( const std::vector<MIDI::Note>& notes, const Base::Tuning& tuning ) const;
+			void 							SetTechniques( std::vector<ARR::Note>& notes, const bool& isBass = false ) const;
 			const ARR::Difficulty			CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) const;
 			const ARR::Chord				CreateChord( const std::vector<ARR::Note> notes, const std::vector<ARR::Chord>& chords,
 												const unsigned int& noteIt, const unsigned char& chordSize ) const;

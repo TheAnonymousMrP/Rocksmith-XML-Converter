@@ -187,7 +187,6 @@ namespace RSXML {
 			if( debug ) { std::cerr << e.what() << "\n"; }
 			write << "\t<something count=\"" << 0 << "\" />\n";
 		}
-		
 		return write.str();
 	}
 
@@ -238,40 +237,69 @@ namespace RSXML {
 		auto& hSource( arrangement.GetHandShapes() );
 		auto& hIndex( d.GetHandShapesIndex() );
 		unsigned int hSize = 0;
+
+		// Tempo stuff, for quantisation of durations.
+		std::vector<Base::Tempo>::const_iterator tempoIt = arrangement.GetTempos().begin();
+		float minDuration = 0.000f;
+		if( arrangement.quantize > 0 ) { minDuration = ( arrangement.GetTempos().front().Convert2Beat() / arrangement.quantize ); }
 		
 		/* For the sake of not repeating code, we're going to use 
 		stringstreams, and pop the results in after. */
 		std::ostringstream nS(""), cS(""), aS(""), hS("");
 		for( auto it = phraseIt.begin(); it != phraseIt.end(); ++it ) {
-			float start = it->GetTime();
-			float end = 0.000f; 
-			if( it != (phraseIt.end() - 1) ) { end = (it + 1)->GetTime(); }
-			else { end = d.GetLength(); }
-
-			std::vector<RSXML::Note> notes;
-			std::vector<RSXML::Chord> chords;
-			std::vector<RSXML::Anchor> anchors;
-			std::vector<RSXML::HandShape> hands;
-			
-			try { notes = GetLevelObjectsFromIndexesWithinTime( nSource, nIndex, start, end ); }
-			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Note error: " << e.what() << "\n"; } }
-			try { chords = GetLevelObjectsFromIndexesWithinTime( cSource, cIndex, start, end ); }
-			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Chord error: " << e.what() << "\n"; } }
-			try { anchors = GetLevelObjectsFromIndexesWithinTime( aSource, aIndex, start, end ); }
-			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Anchor error: " << e.what() << "\n"; } }
-			try { hands = GetLevelObjectsFromIndexesWithinTime( hSource, hIndex, start, end ); }
-			catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::HandShape error: " << e.what() << "\n"; } }
-
 			RSXML::PhraseTemplate p = arrangement.GetPhrases().at( it->GetPhraseID() );
 			if( d.IsTranscription() || d.GetIndex() <= p.GetMaxDifficulty() ) { 
-				for( const Note& n : notes ) { nS << t << n.ToXML(); }
-				nSize += notes.size();
-				for( const Chord& c : chords ) { cS << t << c.ToXML(); }
-				cSize += chords.size();
-				for( const Anchor& a : anchors ) { aS << t << a.ToXML(); }
-				aSize += anchors.size();
-				for( const HandShape& h : hands ) { hS << t << h.ToXML(); }
-				hSize += hands.size();
+				float start = it->GetTime();
+				float end = 0.000f; 
+				if( it != (phraseIt.end() - 1) ) { end = (it + 1)->GetTime(); }
+				else { end = d.GetLength(); }
+				while( tempoIt != arrangement.GetTempos().end() && tempoIt->GetTime() <= it->GetTime() ) {
+					minDuration = ( tempoIt->Convert2Beat() / arrangement.quantize );
+					++tempoIt;
+				}
+
+				// Notes
+				if( !nIndex.empty() ) {
+					std::vector<RSXML::Note> notes;
+					try { notes = GetLevelObjectsFromIndexesWithinTime( nSource, nIndex, start, end ); }
+					catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Note error: " << e.what() << "\n"; } }
+					for( const Note& n : notes ) { 
+						while( tempoIt != arrangement.GetTempos().end() && tempoIt->GetTime() <= it->GetTime() ) {
+							minDuration = ( tempoIt->Convert2Beat() / arrangement.quantize );
+							++tempoIt;
+						}
+						nS << t << n.ToXML( minDuration, false ); 
+					}
+					nSize += notes.size();
+				}
+
+				// Chords
+				if( !cIndex.empty() ) {
+					std::vector<RSXML::Chord> chords;
+					try { chords = GetLevelObjectsFromIndexesWithinTime( cSource, cIndex, start, end ); }
+					catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Chord error: " << e.what() << "\n"; } }
+					for( const Chord& c : chords ) { cS << t << c.ToXML(); }
+					cSize += chords.size();
+				}
+				
+				// Anchors
+				if( !aIndex.empty() ) {
+					std::vector<RSXML::Anchor> anchors;
+					try { anchors = GetLevelObjectsFromIndexesWithinTime( aSource, aIndex, start, end ); }
+					catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::Anchor error: " << e.what() << "\n"; } }
+					for( const Anchor& a : anchors ) { aS << t << a.ToXML(); }
+					aSize += anchors.size();
+				}
+				
+				// Handshapes
+				if( !hIndex.empty() ) {
+					std::vector<RSXML::HandShape> hands;
+					try { hands = GetLevelObjectsFromIndexesWithinTime( hSource, hIndex, start, end ); }
+					catch ( Base::VectorEmptyException e ) { if( debug ) { std::cerr << "RSXML::HandShape error: " << e.what() << "\n"; } }
+					for( const HandShape& h : hands ) { hS << t << h.ToXML(); }
+					hSize += hands.size();
+				}
+
 			}
 
 			/* std::cerr << "ID: " << (unsigned int)it->GetPhraseID() << " Difficulty: " << d.GetIndex() << " Max Dif: " << p.GetMaxDifficulty() 

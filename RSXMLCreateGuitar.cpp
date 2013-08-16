@@ -7,7 +7,7 @@
 #endif
 
 namespace RSXML {
-	const RSXML::Guitar CreateGuitar::Create( const ARR::Guitar& arrg, const bool& bass ) {
+	const RSXML::Guitar CreateGuitar::Create( const ARR::Guitar& arrg ) {
 		Guitar rsg( arrg.GetDuration(), arrg.GetName(), arrg.IsBass() );
 
 		// Global/meta data.
@@ -67,7 +67,7 @@ namespace RSXML {
 		
 			int beat = 0; // Beat counter.
 			int bar = 0; // Bar counter.
-			float timer = tempoIt->GetTempo();
+			float timer = tempoIt->GetTime();
 			
 			unsigned int numerator = timeSigIt->numerator;
 			while( timer < g.GetDuration() ) {
@@ -193,12 +193,16 @@ namespace RSXML {
 	// Converts ARR::Note vector into RSXML::Note vector.
 	const std::vector<RSXML::Note> CreateGuitar::ConvertARR2RSXMLNotes( const std::vector<ARR::Note>& source ) {
 		// At present, ARR and RSXML notes are the same. This may not be the case in the future.
+		
 		std::vector<RSXML::Note> dest;
 		try {
 			if( source.empty() ) { throw Base::VectorEmptyException( "ARR::Note", "RSXML::CreateGuitar::ConvertARR2RSXMLNotes" ); }
 			for( auto& arr : source ) {	
-				RSXML::Note rsxml( arr );
-				dest.push_back( rsxml );
+				// We strip out any notes with the 'Fret Hand Mute' attribute set. For now, anyway. A program-wide flag may be introduced for this.
+				if( arr.values[ RSXML::Note::eValues::FRETHANDMUTE ] == false ) {
+					RSXML::Note rsxml( arr );
+					dest.push_back( rsxml );
+				}
 			}
 		} catch( Base::VectorEmptyException e ) {
 			std::cout << e.what() << "\n";

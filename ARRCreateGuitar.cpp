@@ -7,9 +7,11 @@
 #endif
 
 namespace ARR {
-	const ARR::Guitar CreateGuitar::Create( const MIDI::Track& t, const bool& bass ) { 
+	const ARR::Guitar CreateGuitar::Create( const MIDI::Track& t ) { 
 		track = t;
-		ARR::Guitar g( t.duration, t.name, bass );
+		ARR::Guitar g( t.duration, t.name );
+
+		if( t.name == "Bass" ) { g.SetAsBass(); }
 		
 		// Global data.
 		g.SetTempos( t.GetTempos() );
@@ -21,8 +23,8 @@ namespace ARR {
 		ConvertSpecialMetas( g );
 		
 		// Note data.
-		std::vector<ARR::Note> notes = ConvertMIDI2ARRNotes( t.GetNotes() );
-		std::vector<ARR::Note> notesOff = ConvertMIDI2ARRNotes( t.GetNotes( 0 ) );
+		std::vector<ARR::Note> notes = ConvertMIDI2ARRNotes( t.GetNotes(), g.tuning );
+		std::vector<ARR::Note> notesOff = ConvertMIDI2ARRNotes( t.GetNotes( 0 ), g.tuning );
 		
 		// Sorting into a single vector. If there's a mismatch of on and off, 
 		// it skips the lot. Better safe than sorry.
@@ -36,7 +38,7 @@ namespace ARR {
 		}
 		
 		// Apply techniques.
-		SetTechniques( notes );
+		SetTechniques( notes, g.IsBass() );
 		
 		std::vector<ARR::Chord> chords;
 		std::vector<ARR::Difficulty> difficulties;
@@ -60,15 +62,29 @@ namespace ARR {
 	void CreateGuitar::ConvertSpecialMetas( ARR::Guitar& g ) const {
 		using Base::eTuning;
 		using Base::aTuning;
+		using Base::bTuning;
 		auto& mSpecial( track.GetMetaStrings( eMeta::SPECIAL ) );
 		eTuning tun = eTuning::STANDARD_E;
 		for( auto& m : mSpecial ) {
-			if( m.GetString() == "TStandardE" ) { tun = eTuning::STANDARD_E; break; }
-			else if( m.GetString() == "TDropD" ) { tun = eTuning::DROP_D; break; }
-			else if( m.GetString() == "TStandardEb" ) { tun = eTuning::STANDARD_EB; break; }
-			else if( m.GetString() == "TOpenG" ) { tun = eTuning::OPEN_G; break; }
+			std::string content = m.GetString();
+			if( content == "TStandardE" ) { tun = eTuning::STANDARD_E; }
+			else if( content == "TDropD" ) { tun = eTuning::DROP_D; }
+			else if( content == "TStandardEb" ) { tun = eTuning::STANDARD_EB; }
+			else if( content == "TOpenG" ) { tun = eTuning::OPEN_G; }
+			else if( content.at( 0 ) == 'Q' ) { 
+				try {
+					std::string quantizeS = content.substr( 1 );
+					unsigned int quantizeI = std::stoi( quantizeS );
+					g.quantize = quantizeI;
+				} catch( const std::invalid_argument& e ) { 
+					if( debug ) { std::cerr << e.what() << "\n"; }
+				} catch( const std::out_of_range& e ) {
+					if( debug ) { std::cerr << e.what() << "\n"; }
+				}
+			} else if( content == "Bass" ) { g.SetAsBass(); }
 		}
-		g.tuning = aTuning[tun];
+		if( g.IsBass() ) { g.tuning = bTuning[ tun ]; } 
+		else { g.tuning = aTuning[ tun ]; }
 	}
 	
 	// Produces ARR::Phrase vector from Base::MetaString vector.
@@ -111,7 +127,7 @@ namespace ARR {
 		return dest;
 	}
 	
-	std::vector<ARR::Note> CreateGuitar::ConvertMIDI2ARRNotes( std::vector<MIDI::Note> source ) const {
+	std::vector<ARR::Note> CreateGuitar::ConvertMIDI2ARRNotes( const std::vector<MIDI::Note>& source, const Base::Tuning& tuning ) const {
 		std::vector<ARR::Note> dest;
 		try {
 			if( source.empty() ) { throw Base::VectorEmptyException( "MIDI::Note", "ARR::CreateGuitar::ConvertMIDI2ARRNotes" ); }
@@ -120,7 +136,7 @@ namespace ARR {
 			for( auto& midi : source ) {	
 				Base::GuitarNote base( midi ); 
 				ARR::Note arr( base, dest.size() );
-				arr.SetFret();
+				arr.SetFret( tuning );
 				dest.push_back( arr );
 			}
 		} catch( Base::VectorEmptyException e ) {
@@ -131,7 +147,7 @@ namespace ARR {
 		return dest;
 	}
 	
-	void CreateGuitar::SetTechniques( std::vector<ARR::Note>& notes ) const {
+	void CreateGuitar::SetTechniques( std::vector<ARR::Note>& notes, const bool& isBass ) const {
 		auto& techniques( track.GetMetaStrings( eMeta::TECHNIQUE ) );
 		try {
 			if( techniques.empty() ) { throw Base::VectorEmptyException( "Techniques", "ARR::CreateGuitar::SetTechniques" ); }
@@ -140,54 +156,71 @@ namespace ARR {
 			over the former to reduce redundant searches. We know all meta-events 
 			and notes were created in a chronological order (at least with MIDI 
 			we do), so we don't have to worry about backtracking issues. */
-			auto nIt = notes.begin();
+			auto lastSuccess = notes.begin();
 			for( auto& tech : techniques ) {
 				/* We shouldn't need to reset this iterator to the beginning ever. That 
 				said, if any meta events are misaligned with the note, we're buggered. */
-				for( nIt = nIt; nIt != notes.end(); ++nIt ) {
+				for( auto nIt = lastSuccess; nIt != notes.end(); ++nIt ) {
 					if( nIt->GetTime() == tech.GetTime() ) {
 						std::string value = tech.GetString();
 						if( value == "A") { 
 							nIt->values[eNoteValues::ACCENT] = true; 
-						} else if( value == "B1") { 
+						} else if( value == "B1" ) { 
 							nIt->values[eNoteValues::BEND_HALF] = true; 
 							nIt->bend = 1.000f;
-						} else if( value == "B2") { 
+						} else if( value == "B2" ) { 
 							nIt->values[eNoteValues::BEND_FULL] = true; 
 							nIt->bend = 2.000f;
-						} else if( value == "HH") { 
+						} else if( value == "FM" ) {
+							nIt->values[eNoteValues::FRETHANDMUTE] = true; // Not yet supported.
+						} else if( value == "HH" ) { 
+							if( debug ) { std::cerr << nIt->GetTime() << ": Hammer on" ENDLINE }
 							nIt->values[eNoteValues::HOPO] = true;
 							nIt->values[eNoteValues::HOPO_ON] = true;
-						} else if( value == "HP") {
+						} else if( value == "HP" ) {
+							if( debug ) { std::cerr << nIt->GetTime() << ": Pull off"  ENDLINE }
 							nIt->values[eNoteValues::HOPO] = true;
 							nIt->values[eNoteValues::HOPO_OFF] = true; 
-						} else if( value == "H") { 
+						} else if( value == "H" ) { 
 							nIt->values[eNoteValues::HARMONIC] = true; 
-						} else if( value == "PH") { 
+						} else if( value == "PH" ) { 
 							nIt->values[eNoteValues::PINCHHARMONIC] = true;
-						} else if( value == "PM") {
+						} else if( value == "PM" ) {
 							nIt->values[eNoteValues::PALMMUTE] = true;
-						} else if( value == "T") {
+						} else if( value == "T" ) {
 							nIt->values[eNoteValues::TREMOLO] = true;
 						// Slides are slightly trickier.	
-						} else if( value == "S") { 
+						} else if( value.front() == 'S' ) { 
 							nIt->values[eNoteValues::SLIDE] = true;
-							if( nIt != ( notes.end() - 1 ) ) {
-								nIt->slide = ( nIt + 1 )->GetFret(); ++nIt;
-							} else { nIt->slide = 1; }
-						}
-						/* FRETHANDMUTE,
-						IGNORE,
+							if( value.size() > 1 ) {
+								unsigned int buffer = std::stoi( value.substr( 1 ) );
+								std::cerr << buffer ENDLINE
+								if( buffer > 0 && buffer <= NUMFRETS ) { nIt->slide = buffer; }
+								else { nIt->slide = 1; }
+							} else {
+								if( nIt != ( notes.end() - 1 ) ) {
+									nIt->slide = ( nIt + 1 )->GetFret();
+								} else { nIt->slide = 1; }
+							}
+							if( debug ) { std::cerr << nIt->GetTime() << ": Slide to " << (unsigned int)nIt->slide ENDLINE }
+						} else if( value == "V" ) {
+							nIt->values[ eNoteValues::VIBRATO ] = true;
+						} else if( value == "BP" && isBass ) {
+							nIt->values[ eNoteValues::BASS_PLUCK ] = true;
+						} else if( value == "BS" && isBass ) {
+							nIt->values[ eNoteValues::BASS_SLAP ] = true;
+						} 
+						/* IGNORE,
 						LINKNEXT,
 						PICK_DIRECTION,
 						SLIDE_UNPITCH,
 						TAP,
 						TAP_LEFT,
-						TAP_RIGHT,
-						VIBRATO,
-						BASS_PLUCK,
-						BASS_SLAP, */
-					} else { break; }
+						TAP_RIGHT */
+
+						lastSuccess = nIt;
+						nIt = notes.end() - 1;
+					} 
 				}	
 			}
 		} catch( Base::VectorEmptyException e ) {
