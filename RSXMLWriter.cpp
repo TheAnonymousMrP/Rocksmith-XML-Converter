@@ -85,7 +85,7 @@ namespace RSXML {
 		write.close();
 		}
 		
-	void Writer::WriteVocals( const ARR::Vocals& v ) {
+	void Writer::WriteVocals( const Base::Vocals& v ) {
 		std::ofstream write;
 		std::string file = fileName + "-Vocals.xml";
 		write.open(file.c_str()); // This is the file we're writing to.

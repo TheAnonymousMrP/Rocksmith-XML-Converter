@@ -1,8 +1,14 @@
+#ifndef MIDI_READ_DEFAULT
 #include "MIDIReaderDefault.h"
-#include "ARRCreateGuitar.h"
-#include "ARRCreateVocals.h"
-#include "RSXMLCreateGuitar.h"
+#endif
+
+#ifndef ARR_GUITAR_BUILDER
+#include "ARRGuitarBuilder.h"
+#endif
+
+#ifndef RSXML_WRITER
 #include "RSXMLWriter.h"
+#endif
 
 #ifndef DEBUG_MIDI
 #include "MIDIDebug.h"
@@ -10,7 +16,6 @@
 
 #include <cstring>
 #include <string>
-#include <vector>
 
 // Flag-based variables
 bool palmToggle = false;
@@ -80,7 +85,7 @@ int main(int argc, char* argv[]) {
 		// Offset time (seconds).
 		if( !strcmp( argv[i], "-offset") ) { 
 			if( argv[i+1] != NULL ) { 
-				std::string offsetS = argv[ i+1 ]; startOffset = atof( offsetS.c_str() );
+				std::string offsetS = argv[ i+1 ]; startOffset = std::stof( offsetS );
 			} 
 		} 
 		// External Lyrics flag.
@@ -104,18 +109,18 @@ int main(int argc, char* argv[]) {
 	for( auto it = tracks.begin(); it != tracks.end(); ++it ) {
 		if( tracks.size() > 0 && (it - tracks.begin()) == 0 ) { }
 		else if( it->name == "Vocals" || it->type == RSXML::eTrackType::VOCAL ) {
-			ARR::CreateVocals a( isDebug );
+			RSXML::VocalsBuilderMIDI a( isDebug );
 			std::string extFileName = "";
 			if ( externalLyrics ) { extFileName = midiName; }
-			ARR::Vocals v = a.Create( *it, extFileName );
+			Base::Vocals v = a.Build( *it, extFileName );
 			std::cout << midiName << "-Vocals.xml" << "\n";
 			rsxml.WriteVocals( v );
 		}
 		else {
-			ARR::CreateGuitar ac( isDebug );
+			ARR::GuitarBuilder ac( isDebug );
 			ARR::Guitar ag = ac.Create( *it );
 			std::cout << midiName << "-" << ag.GetName() << ".xml\n";
-			RSXML::CreateGuitar rc( isDebug );
+			RSXML::GuitarBuilder rc( isDebug );
 			RSXML::Guitar rg = rc.Create( ag );
 			rsxml.WriteGuitar( rg );
 		}

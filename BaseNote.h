@@ -5,72 +5,88 @@
 #include <string>
 #include <iostream>
 
-#define NUMSTRINGS 6
+#define GUITARSTRINGS 6
 #define BASSSTRINGS 4
 #define NUMFRETS 22
 
 namespace Base {
-	class BaseObject {
+	// Basic time structure to reduce redundancy across objects (including Chord's?).
+	class TimeObject {
 		public:
-			BaseObject( const float& time = 0.000f ) : time( time ) { };
-			
+			TimeObject( const float& time = 0.000f, const float& duration = 0.000f ) : time( time ), duration( duration ) { };
+
 			const float&	GetTime() const { return time; };
-			
+			const float&	GetDuration() const { return duration; };
+
 		protected:
 			float			time;
+			float			duration;
+
 	};
 
-	class Note {
+	class Note : public TimeObject {
 		public:
-			Note( const float& tim = 0.000f, const unsigned char& pit = 0xFF ) 
-				: time( tim ), pitch( pit ), duration( 0.000f ) { };
+			Note( const float& time = 0.000f, const unsigned char& pitch = 0xFF, const float& duration = 0.000f ) 
+				: TimeObject( time, duration ), pitch( pitch ) { };
 				
-			const float&			GetTime() const { return time; };
-			float 					duration;
 			const unsigned char& 	GetPitch() const { return pitch; };
 	
 		protected:
-			float					time;
 			unsigned char 			pitch;
+	};
+
+	class Lyric : public Base::Note {
+		public:
+			Lyric( const float& tim = 0.000f, const unsigned int& pit = 0, const std::string& w = "" ) : Base::Note( tim, pit ), word( w ) { };
+		
+			std::string word;
+	};
+
+	enum class eInstrument {
+		GUITAR6,
+		BASS
 	};
 	
 	typedef struct {
-		std::string 							name;
-		std::array<unsigned char, NUMSTRINGS>	pitch;
+		eInstrument									instrument;
+		std::string 								name;
+		std::array<unsigned char, GUITARSTRINGS>	pitch;
 	} Tuning;
 	
 	enum eTuning {
 		STANDARD_E,
 		DROP_D,
 		STANDARD_EB,
-		OPEN_G
+		OPEN_G,
+		size
 	};
 	
-	const std::array<Tuning, 10> aTuning = { { 
-			{ "Standard E", { { 52, 57, 62, 67, 71, 76 } } },
-			{ "Drop D", { { 50, 57, 62, 67, 71, 76 } } },
-			{ "Standard Eb", { { 51, 56, 61, 66, 70, 75 } } },
-			{ "Open G", { { 50, 55, 62, 67, 71, 74 } } },
+	const std::array<Tuning, eTuning::size> aTuning = { { 
+			{ eInstrument::GUITAR6, "Standard E", { { 52, 57, 62, 67, 71, 76 } } },
+			{ eInstrument::GUITAR6, "Drop D", { { 50, 57, 62, 67, 71, 76 } } },
+			{ eInstrument::GUITAR6, "Standard Eb", { { 51, 56, 61, 66, 70, 75 } } },
+			{ eInstrument::GUITAR6, "Open G", { { 50, 55, 62, 67, 71, 74 } } },
 		} };
 
-	const std::array<Tuning, 10> bTuning = { { 
-			{ "Standard E", { { 40, 45, 50, 55 } } },
-			{ "Drop D", { { 38, 45, 50, 55 } } },
-			{ "Standard Eb", { { 39, 44, 49, 54 } } },
-			{ "Open G", { { 38, 43, 50, 55, 59, 62 } } },
+	const std::array<Tuning, eTuning::size> bassTuning = { { 
+			{ eInstrument::BASS, "Standard E", { { 40, 45, 50, 55 } } },
+			{ eInstrument::BASS, "Drop D", { { 38, 45, 50, 55 } } },
+			{ eInstrument::BASS, "Standard Eb", { { 39, 44, 49, 54 } } },
+			{ eInstrument::BASS, "Open G", { { 38, 43, 50, 55, 59, 62 } } },
 		} };
 	
 	class GuitarNote : public Base::Note {
 		public:
-			GuitarNote( const float& tim = 0.000f, const unsigned char& pit = 0xFF, const unsigned char& str = 0x00, 
-				const unsigned char& dif = 0 ) : Base::Note( tim, pit ), string( str ), bend( 0.000f ), slide( 0 ), 
-				normalisedDifficulty( dif), fret( 0xFF ) { };
+			GuitarNote( const float& time = 0.000f, const unsigned char& pitch = 0xFF, const unsigned char& string = 0x00, const float& duration = 0.000f ) 
+				: Base::Note( time, pitch, duration ), normalisedDifficulty( 0x00 ), bend( 0.000f ), slide( 0 ), packed( 0xFF ), fret( 0xFF ), string( string ) { };
 		
 			unsigned char			normalisedDifficulty;
 			float					bend;
 			unsigned char			slide;
-		
-			const unsigned char&	GetFret() const { return fret; }
+			
+			const unsigned char&	GetPacked() const { return packed; };
+			
+			const unsigned char&	GetFret() const { return fret; };
 			const unsigned char&	GetString() const { return string; };
 			
 			const bool				IsBend() const { 
@@ -82,19 +98,20 @@ namespace Base {
 										if( pitch != 0xFF ) { fret = pitch - tun.pitch[ string ]; }
 										/* std::cerr << "Pitch: " << (unsigned int)pitch << " String: " << (unsigned int)string << " Fret: " 
 											<< (unsigned int)fret << " Tuning: " << (unsigned int)tun.pitch[ string ] << "\n"; */
-									}
+									};
+			// Sets 'packed', a single-char amalgamation of string and fret.
+			void					SetPacked( const unsigned char& string = 0x00, const unsigned char& fret = 0xFF, const Tuning& tun = aTuning[ eTuning::STANDARD_E ] ) {
+										packed = string << 5;
+										packed += ( fret & 0xE0 );
+									};
 			
 		protected:
+			unsigned char			packed;
+
 			unsigned char			fret;
 			unsigned char			string;
 	};
 	
-	struct Lyric : public Base::Note {
-		Lyric( const float& tim = 0.000f, const unsigned int& pit = 0, 
-			const std::string& w = "" ) : Base::Note( tim, pit ), word( w ) { };
-		
-		std::string word;
-	};
 };
 
 namespace RSXML {

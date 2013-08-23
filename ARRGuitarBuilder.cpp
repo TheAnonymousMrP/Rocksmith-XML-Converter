@@ -1,5 +1,5 @@
-#ifndef ARR_CREATE_GUITAR
-#include "ARRCreateGuitar.h"
+#ifndef ARR_GUITAR_BUILDER
+#include "ARRGuitarBuilder.h"
 #endif
 
 #ifndef DEBUG_STUFF
@@ -7,7 +7,7 @@
 #endif
 
 namespace ARR {
-	const ARR::Guitar CreateGuitar::Create( const MIDI::Track& t ) { 
+	const ARR::Guitar GuitarBuilder::Create( const MIDI::Track& t ) { 
 		track = t;
 		ARR::Guitar g( t.duration, t.name );
 
@@ -26,15 +26,14 @@ namespace ARR {
 		std::vector<ARR::Note> notes = ConvertMIDI2ARRNotes( t.GetNotes(), g.tuning );
 		std::vector<ARR::Note> notesOff = ConvertMIDI2ARRNotes( t.GetNotes( 0 ), g.tuning );
 		
-		// Sorting into a single vector. If there's a mismatch of on and off, 
-		// it skips the lot. Better safe than sorry.
+		// Sorting into a single vector. If there's a mismatch of on and off, it skips the lot. Better safe than sorry.
 		if( notes.size() == notesOff.size() ) {
 			auto jt = notesOff.begin();
 			for( auto it = notes.begin(); it != notes.end(); ++it, ++jt ) {
-				it->duration = jt->GetTime() - it->GetTime();
+				it->SetDuration( jt->GetTime() - it->GetTime() );
 			}
 		} else { 
-			for( auto& n : notes ) { n.duration = 0.000f; } 
+			for( auto& n : notes ) { n.SetDuration(); } 
 		}
 		
 		// Apply techniques.
@@ -59,10 +58,10 @@ namespace ARR {
 	};
 	
 	// Handles the occurence of special meta events, such as alternate tunings.
-	void CreateGuitar::ConvertSpecialMetas( ARR::Guitar& g ) const {
+	void GuitarBuilder::ConvertSpecialMetas( ARR::Guitar& g ) const {
 		using Base::eTuning;
 		using Base::aTuning;
-		using Base::bTuning;
+		using Base::bassTuning;
 		auto& mSpecial( track.GetMetaStrings( eMeta::SPECIAL ) );
 		eTuning tun = eTuning::STANDARD_E;
 		for( auto& m : mSpecial ) {
@@ -83,15 +82,15 @@ namespace ARR {
 				}
 			} else if( content == "Bass" ) { g.SetAsBass(); }
 		}
-		if( g.IsBass() ) { g.tuning = bTuning[ tun ]; } 
+		if( g.IsBass() ) { g.tuning = bassTuning[ tun ]; } 
 		else { g.tuning = aTuning[ tun ]; }
 	}
 	
 	// Produces ARR::Phrase vector from Base::MetaString vector.
-	const std::vector<ARR::Phrase> CreateGuitar::CreatePhrases( const std::vector<Base::MetaString>& source ) const {
+	const std::vector<ARR::Phrase> GuitarBuilder::CreatePhrases( const std::vector<Base::MetaString>& source ) const {
 		std::vector<ARR::Phrase> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "MetaString", "ARR::CreateGuitar::CreatePhrases" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "MetaString", "ARR::GuitarBuilder::CreatePhrases" ); }
 			for( std::vector<Base::MetaString>::const_iterator it = source.begin(); it != source.end(); ++it ) {
 				float duration = 0.000f;
 				auto jt = it + 1;
@@ -108,10 +107,10 @@ namespace ARR {
 	}
 
 	// Produces ARR::Section vector from Base::MetaString vector.
-	const std::vector<ARR::Section> CreateGuitar::CreateSections( const std::vector<Base::MetaString>& source ) const {
+	const std::vector<ARR::Section> GuitarBuilder::CreateSections( const std::vector<Base::MetaString>& source ) const {
 		std::vector<ARR::Section> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "MetaString", "ARR::CreateGuitar::CreateSections" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "MetaString", "ARR::GuitarBuilder::CreateSections" ); }
 			for( std::vector<Base::MetaString>::const_iterator it = source.begin(); it != source.end(); ++it ) {
 				float duration = 0.000f;
 				auto jt = it + 1;
@@ -127,10 +126,10 @@ namespace ARR {
 		return dest;
 	}
 	
-	std::vector<ARR::Note> CreateGuitar::ConvertMIDI2ARRNotes( const std::vector<MIDI::Note>& source, const Base::Tuning& tuning ) const {
+	std::vector<ARR::Note> GuitarBuilder::ConvertMIDI2ARRNotes( const std::vector<MIDI::Note>& source, const Base::Tuning& tuning ) const {
 		std::vector<ARR::Note> dest;
 		try {
-			if( source.empty() ) { throw Base::VectorEmptyException( "MIDI::Note", "ARR::CreateGuitar::ConvertMIDI2ARRNotes" ); }
+			if( source.empty() ) { throw Base::VectorEmptyException( "MIDI::Note", "ARR::GuitarBuilder::ConvertMIDI2ARRNotes" ); }
 			/* We intentionally 'slice' the MIDI note to a base note and then add it to 
 			the ARR note vector. Provides an index for the note. */
 			for( auto& midi : source ) {	
@@ -147,11 +146,11 @@ namespace ARR {
 		return dest;
 	}
 	
-	void CreateGuitar::SetTechniques( std::vector<ARR::Note>& notes, const bool& isBass ) const {
+	void GuitarBuilder::SetTechniques( std::vector<ARR::Note>& notes, const bool& isBass ) const {
 		auto& techniques( track.GetMetaStrings( eMeta::TECHNIQUE ) );
 		try {
-			if( techniques.empty() ) { throw Base::VectorEmptyException( "Techniques", "ARR::CreateGuitar::SetTechniques" ); }
-			else if ( notes.empty() ) { throw Base::VectorEmptyException( "ARR::Note", "ARR::CreateGuitar::SetTechniques" ); } // Should be impossible.
+			if( techniques.empty() ) { throw Base::VectorEmptyException( "Techniques", "ARR::GuitarBuilder::SetTechniques" ); }
+			else if ( notes.empty() ) { throw Base::VectorEmptyException( "ARR::Note", "ARR::GuitarBuilder::SetTechniques" ); } // Should be impossible.
 			/* As there will always be less techniques than notes, we will iterate
 			over the former to reduce redundant searches. We know all meta-events 
 			and notes were created in a chronological order (at least with MIDI 
@@ -164,34 +163,34 @@ namespace ARR {
 					if( nIt->GetTime() == tech.GetTime() ) {
 						std::string value = tech.GetString();
 						if( value == "A") { 
-							nIt->values[eNoteValues::ACCENT] = true; 
+							nIt->values[eNoteTechniques::ACCENT] = true; 
 						} else if( value == "B1" ) { 
-							nIt->values[eNoteValues::BEND_HALF] = true; 
+							nIt->values[eNoteTechniques::BEND_HALF] = true; 
 							nIt->bend = 1.000f;
 						} else if( value == "B2" ) { 
-							nIt->values[eNoteValues::BEND_FULL] = true; 
+							nIt->values[eNoteTechniques::BEND_FULL] = true; 
 							nIt->bend = 2.000f;
 						} else if( value == "FM" ) {
-							nIt->values[eNoteValues::FRETHANDMUTE] = true; // Not yet supported.
+							nIt->values[eNoteTechniques::FRETHANDMUTE] = true; // Not yet supported.
 						} else if( value == "HH" ) { 
 							if( debug ) { std::cerr << nIt->GetTime() << ": Hammer on" ENDLINE }
-							nIt->values[eNoteValues::HOPO] = true;
-							nIt->values[eNoteValues::HOPO_ON] = true;
+							nIt->values[eNoteTechniques::HOPO] = true;
+							nIt->values[eNoteTechniques::HOPO_ON] = true;
 						} else if( value == "HP" ) {
 							if( debug ) { std::cerr << nIt->GetTime() << ": Pull off"  ENDLINE }
-							nIt->values[eNoteValues::HOPO] = true;
-							nIt->values[eNoteValues::HOPO_OFF] = true; 
+							nIt->values[eNoteTechniques::HOPO] = true;
+							nIt->values[eNoteTechniques::HOPO_OFF] = true; 
 						} else if( value == "H" ) { 
-							nIt->values[eNoteValues::HARMONIC] = true; 
+							nIt->values[eNoteTechniques::HARMONIC] = true; 
 						} else if( value == "PH" ) { 
-							nIt->values[eNoteValues::PINCHHARMONIC] = true;
+							nIt->values[eNoteTechniques::PINCHHARMONIC] = true;
 						} else if( value == "PM" ) {
-							nIt->values[eNoteValues::PALMMUTE] = true;
+							nIt->values[eNoteTechniques::PALMMUTE] = true;
 						} else if( value == "T" ) {
-							nIt->values[eNoteValues::TREMOLO] = true;
+							nIt->values[eNoteTechniques::TREMOLO] = true;
 						// Slides are slightly trickier.	
 						} else if( value.front() == 'S' ) { 
-							nIt->values[eNoteValues::SLIDE] = true;
+							nIt->values[eNoteTechniques::SLIDE] = true;
 							if( value.size() > 1 ) {
 								unsigned int buffer = std::stoi( value.substr( 1 ) );
 								std::cerr << buffer ENDLINE
@@ -204,11 +203,11 @@ namespace ARR {
 							}
 							if( debug ) { std::cerr << nIt->GetTime() << ": Slide to " << (unsigned int)nIt->slide ENDLINE }
 						} else if( value == "V" ) {
-							nIt->values[ eNoteValues::VIBRATO ] = true;
+							nIt->values[ eNoteTechniques::VIBRATO ] = true;
 						} else if( value == "BP" && isBass ) {
-							nIt->values[ eNoteValues::BASS_PLUCK ] = true;
+							nIt->values[ eNoteTechniques::BASS_PLUCK ] = true;
 						} else if( value == "BS" && isBass ) {
-							nIt->values[ eNoteValues::BASS_SLAP ] = true;
+							nIt->values[ eNoteTechniques::BASS_SLAP ] = true;
 						} 
 						/* IGNORE,
 						LINKNEXT,
@@ -228,7 +227,7 @@ namespace ARR {
 		}
 	}
 	
-	const ARR::Difficulty CreateGuitar::CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) const {
+	const ARR::Difficulty GuitarBuilder::CreateDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord>& chords ) const {
 		std::vector<unsigned int> index;
 		std::vector<unsigned int> notesIndex;
 		std::vector<unsigned int> chordsIndex;
@@ -260,10 +259,10 @@ namespace ARR {
 		return d;
 	}
 	
-	const ARR::Chord CreateGuitar::CreateChord( const std::vector<ARR::Note> notes, const std::vector<ARR::Chord>& chords,
+	const ARR::Chord GuitarBuilder::CreateChord( const std::vector<ARR::Note> notes, const std::vector<ARR::Chord>& chords,
 			const unsigned int& noteIt, const unsigned char& chordSize ) const {
 		float time = notes.at( noteIt ).GetTime();
-		std::array<unsigned int, NUMSTRINGS> indexes = Base::DEFAULTINDEX;
+		std::array<unsigned int, GUITARSTRINGS> indexes = Base::DEFAULTINDEX;
 
 		for( unsigned int i = noteIt; i <= noteIt + chordSize; ++i ) { indexes[ i - noteIt ] = i; }
 

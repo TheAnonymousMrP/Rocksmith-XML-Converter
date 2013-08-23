@@ -21,7 +21,7 @@ namespace MIDI {
 			std::string			name;
 			float				duration;
 			
-			void 	AddNote( const MIDI::Note& note, bool on = 1 ) {
+			void 	AddNote( const MIDI::Note& note, bool on = true ) {
 						if( on ) { noteOn.push_back( note ); }
 						else { noteOff.push_back( note ); }	
 					};

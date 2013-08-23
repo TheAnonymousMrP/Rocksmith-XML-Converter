@@ -1,5 +1,5 @@
-#ifndef ARR_CREATE_GUITAR
-#define ARR_CREATE_GUITAR
+#ifndef ARR_GUITAR_BUILDER
+#define ARR_GUITAR_BUILDER
 
 #ifndef ARR_GUITAR
 #include "ARRGuitar.h"
@@ -13,13 +13,13 @@
 #include <string>
 #include <vector>
 
-/* The intent here is to take all the 'raw' information of a track and create an 
-arrangement ready to be written to the appropriate file (ie, a Rocksmith XML). */
+/* The intent here is to take all the 'raw' information of a MIDI track and create an 
+arrangement general enough to be written to a number of formats, but specifically a Rocksmith XML). */
 
 namespace ARR {
-	class CreateGuitar {
+	class GuitarBuilder {
 		public:
-			CreateGuitar( const bool& debug = false ) : debug( debug ) { };
+			GuitarBuilder( const bool& debug = false ) : debug( debug ) { };
 			
 			const ARR::Guitar 				Create( const MIDI::Track& t );
 			
@@ -42,6 +42,27 @@ namespace ARR {
 			Difficulty 						createDifficulty(unsigned int i, std::ostream& file);
 			Chord 							createChord(const std::vector<Note>& nSource, std::vector<Note>::iterator it, int chordSize);
 			Chord 							createChord2( const std::vector<Note>& notes, const std::vector<unsigned int>& indexes );
+	};
+
+	class GuitarBuilderMIDI {
+		public:
+			GuitarBuilderMIDI( const bool& debug = false ) : debug( debug ) { };
+			
+			const ARR::Guitar2 				Build( const MIDI::Track& track );
+			
+		private:
+			const bool						debug;
+
+			MIDI::Track						track;
+		
+			void 							ConvertSpecialMetas( ARR::Guitar2& arrangement, const MIDI::Track& track ) const;
+			const std::vector<ARR::Phrase> 	BuildPhrases( const std::vector<Base::MetaString>& source ) const;
+			const std::vector<ARR::Section> BuildSections( const std::vector<Base::MetaString>& source ) const;
+			std::vector<ARR::Note>			BuildNotes( const MIDI::Track& track, const Base::Tuning& tuning ) const;
+			void 							SetTechniques( std::vector<ARR::Note>& notes, const std::vector<Base::MetaString>& techniques, const bool& isBass = false ) const;
+			const ARR::Difficulty2			BuildDifficulty( const unsigned int& dif, const std::vector<ARR::Note>& notes, std::vector<ARR::Chord2>& chords ) const;
+			const ARR::Chord2				CreateChord( const std::vector<ARR::Note> notes, const std::vector<ARR::Chord>& chords,
+												const unsigned int& noteIt, const unsigned char& chordSize ) const;
 	};
 };	
 	

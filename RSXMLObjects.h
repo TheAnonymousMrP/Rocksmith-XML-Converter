@@ -79,7 +79,7 @@ namespace RSXML {
 			unsigned int			index;
 	};	
 	
-	class Note : virtual public Base::GuitarNote, virtual public LevelObject { 
+	class Note : public Base::GuitarNote, public LevelObject { 
 		public:
 			enum eValues {
 				ACCENT,
@@ -115,11 +115,24 @@ namespace RSXML {
 				
 			std::array<bool,eValues::size>	values;
 			
+			void							SetDuration( const float& dur = 0.000f ) { duration = dur; };
+
 			const std::string				ToXML( const float& quantize = 0.000f, const bool& chord = false ) const;
 			
 	};
+
+	enum eChordTechniques {
+		ACCENT,
+		FRETHANDMUTE,
+		HIGHDENSITY,
+		IGNORE,
+		LINKNEXT,
+		PALMMUTE,
+		STRUM,
+		size,
+	};
 	
-	class Chord : public Base::Chord, public LevelObject, public Template {
+	class Chord : public Base::Chord, public LevelObject {
 		public:
 			enum eValues {
 				ACCENT,
@@ -132,11 +145,9 @@ namespace RSXML {
 				size,
 			};
 
-			Chord( const float& time = 0.000f, const std::array<unsigned int, 6>& notesIndex = Base::DEFAULTINDEX,
-				const unsigned int& chordID = 0, const unsigned int& index = 0 ) 
-				: Base::Chord( time, notesIndex ), LevelObject( index ), chordID( chordID )  
-				{ values.fill( false ); };
-			Chord( const Chord& chord ) : Base::Chord( chord ), LevelObject( chord ), Template( chord ), values( chord.values ) { };
+			Chord( const float& time = 0.000f, const std::array<unsigned int, 6>& notesIndex = Base::DEFAULTINDEX, const unsigned int& chordID = 0, 
+				const unsigned int& index = 0 ) : Base::Chord( time, notesIndex ), LevelObject( index ), chordID( chordID ) { values.fill( false ); };
+			Chord( const Chord& chord ) : Base::Chord( chord ), LevelObject( chord ), values( chord.values ), chordID( chord.chordID ) { };
 			Chord( const Base::Chord& g, const std::array<bool,eValues::size> values, const unsigned int& chordID = 0, const unsigned int& index = 0 ) 
 				: Base::Chord( g ), LevelObject( index ), chordID( chordID ), values( values ) { };
 				
@@ -149,6 +160,19 @@ namespace RSXML {
 
 		private:
 			Template						chordID;
+	};
+
+	class Chord2 : public Base::Chord2<RSXML::Note> {
+		public:
+			Chord2( std::vector< std::shared_ptr<RSXML::Note> > notePointers, const unsigned int& chordID ) 
+				: Base::Chord2<RSXML::Note>( notePointers ), chordID( chordID ) { values.fill( false ); };
+
+			std::array<bool, eChordTechniques::size>			values;
+
+			const unsigned int&									GetID() const { return chordID.id; }
+
+		private:
+			Template											chordID;
 	};
 	
 	class Anchor : public LevelObject {

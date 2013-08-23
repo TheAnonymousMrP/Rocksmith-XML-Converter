@@ -17,7 +17,7 @@
 #define DEFAULTTIMESIG32ND 8
 
 namespace Base {
-	enum eMeta {
+	enum class eMeta {
 		ANCHOR,
 		BEND,
 		CHORD,
@@ -128,8 +128,7 @@ namespace Base {
 	
 	class Tempo : public Base::Meta {
 		public:
-			Tempo( const float& tim = 0.000f, const float& val = 120.000f ) 
-				: Base::Meta( Base::eMeta::TEMPO, tim ), value( val ) { };
+			Tempo( const float& tim = 0.000f, const float& val = 120.000f ) : Base::Meta( Base::eMeta::TEMPO, tim ), value( val ) { };
 				
 			const float&			GetTempo() const { return value; };
 			float					Convert2Beat() const { return ONEMINUTE / value; };
@@ -180,8 +179,7 @@ namespace Base {
 	};
 	
 	class MetaException : public std::exception {
-		virtual const char* what() const throw() 
-			{ return "Invalid eMeta type for context."; };
+		virtual const char* what() const throw() { return "Invalid eMeta type for context."; };
 	};
 	
 	

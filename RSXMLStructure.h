@@ -22,8 +22,7 @@ namespace RSXML {
 	
 	class Beat {
 		public:
-			Beat( const float& time = 0.000f, const int& bar = 0 ) 
-				: time( time ), bar( bar ) { };
+			Beat( const float& time = 0.000f, const int& bar = 0 ) : time( time ), bar( bar ) { };
 		
 			const float&		GetTime() const { return time; };
 			const std::string	ToXML() const;
@@ -35,50 +34,50 @@ namespace RSXML {
 		
 	class ChordTemplate : public Template {
 		public:
-			ChordTemplate( const std::array<unsigned char, NUMSTRINGS>& frets, 
-				const std::array<unsigned char, NUMSTRINGS>& fingers, const std::string& cName = "",
+			ChordTemplate( const std::array<unsigned char, GUITARSTRINGS>& frets, 
+				const std::array<unsigned char, GUITARSTRINGS>& fingers, const std::string& cName = "",
 				const std::string& dName = "", const unsigned int& i = 0 ) 
 				: Template( i ), frets( frets ), fingers( fingers ) { chordName = cName; displayName = dName; };
 			
 			std::string										chordName;
 			std::string										displayName;
 						
-			const std::array<unsigned char, NUMSTRINGS>&	GetFrets() const { return frets; };
-			const std::array<unsigned char, NUMSTRINGS>&	GetFingers() const { return fingers; };
+			const std::array<unsigned char, GUITARSTRINGS>&	GetFrets() const { return frets; };
+			const std::array<unsigned char, GUITARSTRINGS>&	GetFingers() const { return fingers; };
 			
 			const std::string								ToXML() const;
 
 
 			// Converts frets from a chord to MIDI pitch.
-			std::array<unsigned char, NUMSTRINGS>			ConvertFrets2Pitches( const Base::Tuning& tuning = Base::aTuning[eTuning::STANDARD_E] ) const {
-				std::array<unsigned char, NUMSTRINGS> pitches; pitches.fill( 0xFF );
+			std::array<unsigned char, GUITARSTRINGS>			ConvertFrets2Pitches( const Base::Tuning& tuning = Base::aTuning[eTuning::STANDARD_E] ) const {
+				std::array<unsigned char, GUITARSTRINGS> pitches; pitches.fill( 0xFF );
 				// for( auto it = frets.begin(); it != frets.end(); ++it ) { std::cout << it - frets.begin() << ": " << (unsigned int)*it << "\t"; } std::cout ENDLINE
-				for( unsigned int i = 0; i < NUMSTRINGS; ++i ) {
+				for( unsigned int i = 0; i < GUITARSTRINGS; ++i ) {
 					if( frets[i] != 0xFF ) { pitches[i] = frets[i] + tuning.pitch[i]; }
 				}
 				return pitches;
 			};
 			// Converts MIDI pitches to frets. Static.
-			static std::array<unsigned char, NUMSTRINGS>	ConvertPitches2Frets( const std::array<unsigned char, NUMSTRINGS>& pitches, 
+			static std::array<unsigned char, GUITARSTRINGS>	ConvertPitches2Frets( const std::array<unsigned char, GUITARSTRINGS>& pitches, 
 																const Base::Tuning& tuning = Base::aTuning[eTuning::STANDARD_E] ) { 
-				std::array<unsigned char, NUMSTRINGS> frets; frets.fill( 0xFF );
-				for( unsigned int i = 0; i <= NUMSTRINGS; ++i ) {
+				std::array<unsigned char, GUITARSTRINGS> frets; frets.fill( 0xFF );
+				for( unsigned int i = 0; i <= GUITARSTRINGS; ++i ) {
 					if( frets[i] != 0xFF ) { frets[i] = pitches[i] - tuning.pitch[i]; }
 				}
 				return frets;
 			};
 			// Experimental: Converts frets to estimated finger positions. Static.
-			static std::array<unsigned char, NUMSTRINGS>	ConvertFrets2Fingers( const std::array<unsigned char, NUMSTRINGS>& frets ) {
-				std::array<unsigned char, NUMSTRINGS> sortedFrets = frets;
+			static std::array<unsigned char, GUITARSTRINGS>	ConvertFrets2Fingers( const std::array<unsigned char, GUITARSTRINGS>& frets ) {
+				std::array<unsigned char, GUITARSTRINGS> sortedFrets = frets;
 				std::sort( sortedFrets.begin(), sortedFrets.end() );
 
 				/* Removes redundant frets from the sorted array. 4 refers to the number of available fingers.
 				GOTHERE
 				std::array<unsigned char, 4> range; range.fill( 0xFF );
-				std::array<unsigned char, NUMSTRINGS>::iterator startFrom = sortedFrets.begin();
+				std::array<unsigned char, GUITARSTRINGS>::iterator startFrom = sortedFrets.begin();
 				GOTHERE
 				for( std::array<unsigned char, 4>::iterator it = range.begin(); it != range.end(); ++it ) {
-					for( std::array<unsigned char, NUMSTRINGS>::iterator jt = startFrom; jt != sortedFrets.end(); ++jt ) { 
+					for( std::array<unsigned char, GUITARSTRINGS>::iterator jt = startFrom; jt != sortedFrets.end(); ++jt ) { 
 						if( *jt != *it ) { 
 							*it = *jt;
 							startFrom = jt;
@@ -88,8 +87,8 @@ namespace RSXML {
 				} 
 				GOTHERE
 				// Should assign the correct finger to string based on lowest fret -> highest.
-				std::array<unsigned char, NUMSTRINGS> fingers; fingers.fill( 0xFF );
-				for( std::array<unsigned char, NUMSTRINGS>::iterator it = fingers.begin(); it != fingers.end(); ++it  ) {
+				std::array<unsigned char, GUITARSTRINGS> fingers; fingers.fill( 0xFF );
+				for( std::array<unsigned char, GUITARSTRINGS>::iterator it = fingers.begin(); it != fingers.end(); ++it  ) {
 					if( frets[ it - fingers.begin() ] != 255 ) {
 						for( std::array<unsigned char, 4>::iterator jt = range.begin(); jt != range.end(); ++jt ) {
 							if( frets[ it - fingers.begin() ] == *jt ) { 
@@ -102,7 +101,7 @@ namespace RSXML {
 				GOTHERE */
 
 				// Should assign the correct finger to string based on lowest fret -> highest.
-				std::array<unsigned char, NUMSTRINGS> fingers; fingers.fill( 0xFF );
+				std::array<unsigned char, GUITARSTRINGS> fingers; fingers.fill( 0xFF );
 				unsigned char last = 0xFF;
 				for( auto it = frets.begin(); it != frets.end(); ++it ) {
 					if( *it != 0xFF ) { 
@@ -115,8 +114,8 @@ namespace RSXML {
 			}
 						
 		private:
-			std::array<unsigned char, NUMSTRINGS>			frets;
-			std::array<unsigned char, NUMSTRINGS>			fingers;	
+			std::array<unsigned char, GUITARSTRINGS>			frets;
+			std::array<unsigned char, GUITARSTRINGS>			fingers;	
 	};
 		
 	class Event : public Base::MetaString {
@@ -148,19 +147,19 @@ namespace RSXML {
 	
 	};
 		
-	class Phrase : public Base::BaseObject {
+	class Phrase : public Base::TimeObject {
 		public:
-			Phrase( const float& tim = 0.000f, const unsigned int& phraseID = 0, const unsigned char& var = 0x00 ) 
-				: BaseObject( tim ), phraseID( phraseID ), variation( var ) { };
+			Phrase( const float& time = 0.000f, const unsigned int& phraseID = 0, const unsigned char& variation = 0x00 ) 
+				: TimeObject( time ), phraseID( phraseID ), variation( variation ) { };
 			
-			const unsigned char&	GetVariation() const { return variation; };
 			unsigned char			GetPhraseID() const { return phraseID.id; };
+			const unsigned char&	GetVariation() const { return variation; };
 			
 			const std::string		ToXML() const;
 			
 		private:
-			unsigned char			variation;
 			Template				phraseID;
+			unsigned char			variation;
 	};
 		
 	class LinkedDiff { 
@@ -173,10 +172,10 @@ namespace RSXML {
 	
 	class PhraseProperty { };
 	
-	class Section : public Base::BaseObject {
+	class Section : public Base::TimeObject {
 		public:
-			Section( const float& tim = 0.000f, const std::string nam = "", const unsigned char& it = 0x00 ) 
-				: BaseObject( tim ) { name = nam; iteration = it; };
+			Section( const float& time = 0.000f, const std::string name = "", const unsigned char& iteration = 0x00 ) 
+				: TimeObject( time ), name( name ), iteration( iteration ) { };
 			
 			const std::string&		GetName() const { return name; };
 			const unsigned char&	GetIteration() const { return iteration; };
@@ -187,7 +186,6 @@ namespace RSXML {
 			std::string				name;
 			unsigned char			iteration;
 	};
-		
 };
 
 #endif

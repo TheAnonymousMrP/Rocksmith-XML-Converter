@@ -1,20 +1,21 @@
-#include "RSXMLCreateGuitar.h"
+#ifndef RSXML_WRITER
+#define RSXML_WRITER
+
+#ifndef RSXML_GUITAR
+#include "RSXMLGuitar.h"
+#endif
+
+#ifndef RSXML_CREATE_GUITAR
+#include "RSXMLGuitarBuilder.h"
+#endif
+
+#ifndef RSXML_VOCALS_BUILDER
+#include "RSXMLVocalsBuilder.h"
+#endif
 
 #ifndef DEBUG_STUFF
 #include "debug.h"
 #endif
-
-#ifndef _ARR_VOCALS
-#include "ARRVocals.h"
-#endif
-
-#ifndef _RSXML_GUITAR
-#include "RSXMLGuitar.h"
-#endif
-
-#include <iostream>
-#include <fstream>
-#include <sstream>
 
 #define DEFAULTOFFSET 5.250f /* Default offset (in seconds) for songs.
 An arbitrary value; still need to fully comprehend how it works. */
@@ -29,7 +30,7 @@ namespace RSXML {
 				: fileName( file ), songName( title ), avgTempo( DEFAULTTEMPO ), debug( debug ) { };
 			
 			void WriteGuitar( const RSXML::Guitar& g ); 
-			void WriteVocals( const ARR::Vocals& v ); 
+			void WriteVocals( const Base::Vocals& v ); 
 			
 		private:
 			std::string 					fileName, songName;
@@ -56,3 +57,4 @@ namespace RSXML {
 	};
 };
 
+#endif

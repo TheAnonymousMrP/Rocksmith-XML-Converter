@@ -1,45 +1,28 @@
-#ifndef ARR_CREATE_VOCALS
-#define ARR_CREATE_VOCALS
+#include "RSXMLVocalsBuilder.h"
 
-#ifndef ARR_VOCALS
-#include "ARRVocals.h"
-#endif
+namespace RSXML {
+	// Public Builders.
+	// Vocals builder from MIDI track.
+	const Base::Vocals VocalsBuilderMIDI::Build( const MIDI::Track& t, std::string ext ) {
+		std::vector<MIDI::Note> notesMIDI = t.GetNotes();
+		std::vector<Base::Note> notes;
+		for( auto& n : notesMIDI ) {
+			Base::Note buffer( n.GetTime(), n.GetPitch(), n.GetDuration() );
+			notes.push_back( buffer );
+		}
 
-#ifndef MIDI_TRACK
-#include "MIDITrack.h"
-#endif
-
-#include <cstring>
-#include <string>
-#include <vector>
-
-namespace ARR { 
-	class CreateVocals {
-		public:
-			CreateVocals( const bool& debug = false ) : debug( debug ) { };
-			
-			const Vocals Create( const MIDI::Track& t, std::string ext = "" );
-			
-		private:	
-			const bool								debug;
-
-			const std::vector<Base::MetaString>		GetExternalWords( std::string fileName );
-			const std::vector<Base::Lyric>			CreateLyrics( const std::vector<MIDI::Note>& notes, const std::vector<Base::MetaString>& words, bool ext = 0 );
-	};
-	
-	const Vocals CreateVocals::Create( const MIDI::Track& t, std::string ext ) {
-		std::vector<MIDI::Note> notes = t.GetNotes();
 		std::vector<Base::MetaString> words; 
 		if( ext != "" ) { words = GetExternalWords( ext ); } 
-		else { words = t.GetMetaStrings( eMeta::LYRICS ); }
+		else { words = t.GetMetaStrings( Base::eMeta::LYRICS ); }
 		
-		std::vector<Base::Lyric> lyrics = CreateLyrics( notes, words, ( ext != "" ) );
+		std::vector<Base::Lyric> lyrics = ConvertLyrics( notes, words, ( ext != "" ) );
 			
-		Vocals v( t.name, lyrics );
+		Base::Vocals v( lyrics, t.name );
 		return v;
 	}
-	
-	const std::vector<Base::Lyric> CreateVocals::CreateLyrics( const std::vector<MIDI::Note>& notes, const std::vector<Base::MetaString>& words, bool ext ) {
+
+	// Protected methods for core Builder.
+	const std::vector<Base::Lyric> VocalsBuilder::ConvertLyrics( const std::vector<Base::Note>& notes, const std::vector<Base::MetaString>& words, bool ext ) {
 		std::vector<Base::Lyric> lyrics;
 		/* The offset of notes and words. Negative values mean there's
 		not enough notes. Positive values mean there's not enough words.
@@ -57,7 +40,7 @@ namespace ARR {
 			}	
 		} else {
 			auto lastSuccess = words.begin();
-			for( const MIDI::Note& n : notes ) {
+			for( const Base::Note& n : notes ) {
 				for( auto jt = lastSuccess; jt != words.end(); ++jt ) {
 					if( n.GetTime() == jt->GetTime() ) { 
 						Base::Lyric nL( n.GetTime(), n.GetPitch(), jt->GetString() );
@@ -71,28 +54,27 @@ namespace ARR {
 		}
 		return lyrics;
 	}
-	
-	const std::vector<Base::MetaString> CreateVocals::GetExternalWords( std::string fileName ) {
+		
+	const std::vector<Base::MetaString> VocalsBuilder::GetExternalWords( std::string fileName ) {
 		std::vector<Base::MetaString> words;
 		
 		fileName += ".txt";
-		std::cout << "External lyrics from '" << fileName 
-			<< "'. \n";
+		std::cout << "External lyrics from '" << fileName << "'. \n";
 		std::ifstream extlyrics;
-		extlyrics.open(fileName.c_str());
+		extlyrics.open( fileName.c_str() );
 		if( extlyrics.is_open() ) {
 			std::string line;
 			std::string buf; // Have a buffer string
 			std::stringstream ss;
 			
 			while( extlyrics.good() ) {
-				getline(extlyrics,line);
+				getline( extlyrics,line );
 				ss.str(""); ss.clear();
 				ss.str(line); 
 				
 				while (ss >> buf) {
-					MetaString word( eMeta::LYRICS, 0.000f, buf );
-					words.push_back(word);
+					Base::MetaString word( Base::eMeta::LYRICS, 0.000f, buf );
+					words.push_back( word );
 				}
 			}
 		}
@@ -102,4 +84,3 @@ namespace ARR {
 	}
 };
 
-#endif

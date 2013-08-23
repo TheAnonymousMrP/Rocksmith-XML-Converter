@@ -10,9 +10,9 @@
 #endif
 
 namespace RSXML {
-	class CreateGuitar {
+	class GuitarBuilder {
 		public:
-			CreateGuitar( const bool& debug = false ) : debug( debug ) { };
+			GuitarBuilder( const bool& debug = false ) : debug( debug ) { };
 			
 			const RSXML::Guitar						Create( const ARR::Guitar& arrg );
 			
