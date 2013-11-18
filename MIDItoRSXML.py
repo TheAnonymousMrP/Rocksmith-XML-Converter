@@ -6,4 +6,6 @@ def main():
 
 	tracks = MIDIReader( fileName )
 
+	print( str( len( tracks ) ) )
+
 main()

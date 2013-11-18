@@ -1,11 +1,23 @@
-class Tuning:
-	_ESTANDARD	= [ 0, 0, 0, 0, 0, 0, "E Standard" ]
-	_DROPD		= [ -2, 0, 0, 0, 0, 0, "Drop D" ]
-	_DSTANDARD	= [ -2, -2, -2, -2, -2, -2, "D Standard" ]
-	_DROPC		= [ -4, -2, -2, -2, -2, -2, "Drop C" ]
+from collections import OrderedDict
+
+class Tuning( object ):
+	_ESTANDARD	= [ [ 0, 0, 0, 0, 0, 0 ], "EStandard", "E Standard" ]
+	_DROPD		= [ [ -2, 0, 0, 0, 0, 0 ], "DropD", "Drop D" ]
+	_DSTANDARD	= [ [ -2, -2, -2, -2, -2, -2 ], "DStandard", "Drop D" ]
+	_DROPC		= [ [ -4, -2, -2, -2, -2, -2 ], "DropC", "Drop C" ]
+
+	def __init__( self, tuning = _ESTANDARD ):
+		self.tuning = tuning
+
+	def __str__( self ):
+		tuning = "<tuning "
+		for index, value in enumerate( self.tuning[0] ):
+			tuning += "string" + str( index ) + "=\"" + str( value ) + "\" "
+		tuning += "/>"
+		return tuning
 
 class Phrase( object ):
-	def __init__( self, name = str, maxDifficulty = int, disparity = 0, ignore = 0, solo = 0 ):
+	def __init__( self, name = "", maxDifficulty = 0, disparity = 0, ignore = 0, solo = 0 ):
 		self.name			= name
 		self.maxDifficulty	= maxDifficulty
 		self.disparity		= disparity
@@ -13,7 +25,9 @@ class Phrase( object ):
 		self.solo			= solo
 
 	def __str__( self ):
-		return "<phrase name=\"" + self.name + "\" maxDifficulty=\"" + str( self.maxDifficulty ) + "\" disparity=\"" + str( self.disparity ) + "\" ignore=\"" + str( ignore ) + "\" solo=\"" + str( solo ) + "\" />"
+		phrase = "<phrase name=\"" + self.name + "\" maxDifficulty=\"" + str( self.maxDifficulty ) + "\" "
+		phrase += "disparity=\"" + str( self.disparity ) + "\" ignore=\"" + str( self.ignore ) + "\" solo=\"" + str( self.solo ) + "\" />"
+		return phrase
 
 class PhraseIteration( object ):
 	def __init__( self, time = float, phraseID = int, variation = int ):
@@ -76,8 +90,8 @@ class Event( object ):
 		return "<ebeat time=\"" + str( self.time ) + "\" code=\"" + self.code + "\" />"
 
 class Level( object ):
-	def __init__( self, type = False, difficulty = int ):
-		self.type		= type
+	def __init__( self, isTranscription = False, difficulty = 0 ):
+		self.type		= isTranscription
 		self.difficulty = difficulty
 		self.notes		= []
 		self.chords		= []
@@ -85,112 +99,197 @@ class Level( object ):
 		self.handShapes = []
 
 	def __str__( self ):
+		indent = "\t\t"
+		if self.type == False:
+			indent += "\t"
 		content = ""
 		# Notes
-		if self.notes.count() == 0:
-			content += "\t<notes count=\"0\" />\n"
+		if len( self.notes ) == 0:
+			content += indent + "<notes count=\"0\" />\n"
 		else:
-			content += "\t<notes count=\"" + self.notes.count() + "\">\n"
+			content += indent + "<notes count=\"" + len( self.notes ) + "\">\n"
 			for i in self.notes:
-				content += "\t\t" + str( i ) + "\n"
-			content += "\t</notes>\n"
+				content += indent + "\t" + str( i ) + "\n"
+			content += indent + "</notes>\n"
 		# Chords
-		if self.chords.count() == 0:
-			content += "\t<chords count=\"0\" />\n"
+		if len( self.chords ) == 0:
+			content += indent + "<chords count=\"0\" />\n"
 		else:
-			content += "\t<chords count=\"" + self.chords.count() + "\">\n"
+			content += indent + "<chords count=\"" + len( self.chords ) + "\">\n"
 			for i in self.chords:
-				content += "\t\t" + str( i ) + "\n"
-			content += "\t</chords>\n"
+				content += indent + "\t\t" + str( i ) + "\n"
+			content += indent + "</chords>\n"
 		# Anchors
-		if self.anchors.count() == 0:
-			content += "\t<anchors count=\"0\" />\n"
+		if len( self.anchors ) == 0:
+			content += indent + "<anchors count=\"0\" />\n"
 		else:
-			content += "\t<anchors count=\"" + self.anchors.count() + "\">\n"
+			content += indent + "<anchors count=\"" + len( self.anchors ) + "\">\n"
 			for i in self.anchors:
-				content += "\t\t" + str( i ) + "\n"
-			content += "\t</anchors>\n"
+				content += indent + "\t\t" + str( i ) + "\n"
+			content += indent + "</anchors>\n"
 		# HandShapes
-		if self.handShapes.count() == 0:
-			content += "\t<handShapes count=\"0\" />\n"
+		if len( self.handShapes ) == 0:
+			content += indent + "<handShapes count=\"0\" />\n"
 		else:
-			content += "\t<handShapes count=\"" + self.handShapes.count() + "\">\n"
+			content += indent + "<handShapes count=\"" + len( self.handShapes ) + "\">\n"
 			for i in self.handShapes:
-				content += "\t\t" + str( i ) + "\n"
-			content += "\t</handShapes>\n"
+				content += indent + "\t\t" + str( i ) + "\n"
+			content += indent + "\t</handShapes>\n"
 
 		output = ""
-		if type is False:
-			output = "<level difficulty=\"" + str( self.difficulty ) + "\" >\n"
+		if self.type == False:
+			output = "\t\t<level difficulty=\"" + str( self.difficulty ) + "\">\n"
 			output += content
-			output += "</level>"
+			output += "\t\t</level>"
 		else:
-			output = "<transcriptionTrack difficulty=\"-1\" >\n"
+			output = "\t<transcriptionTrack difficulty=\"-1\">\n"
 			output += content
-			output += "</transcriptionTrack>"
+			output += "\t</transcriptionTrack>"
 		return output
 
+class BendValue( object ):
+	def __init__( self, time = float( 0 ), step = float( 0 ) ):
+		self.time	= time
+		self.step	= step
+
+	def __str__( self ):
+		indent = "\t"
+		return indent + "<bendValue time=\"" + str( self.time ) + "\" step=\"" + str( self.step ) + "\" />"
+
 class Note( object ):
-	_TECHNIQUES = [ ( "linkNext", 0, ), ( "bend", 0 ), ( "hopo", 0 ), ( "hammerOn", 0 ), ( "pullOff", 0 ), 
+	_TECHNIQUES = OrderedDict( [ ( "linkNext", 0 ), ( "bend", 0 ), ( "hopo", 0 ), ( "hammerOn", 0 ), ( "pullOff", 0 ), 
 				( "harmonic", 0 ), ( "harmonicPinch", 0 ), ( "ignore", 0 ), ( "leftHand", 1 ), ( "rightHand", 0 ), 
 				( "mute", 0 ), ( "palmMute", 0 ), ( "pickDirection", 0 ), ( "pluck", -1 ), ( "slap", -1 ), 
-				( "slideTo", -1 ), ( "slideUnpitchTo", -1 ), ( "sustain", float( 0 ) ), ( "tap", 0 ), ( "tremolo", 0 ), ( "vibrato", 0 ) ]
+				( "slideTo", -1 ), ( "slideUnpitchTo", -1 ), ( "sustain", float( 0 ) ), ( "tap", 0 ), ( "tremolo", 0 ), ( "vibrato", 0 ) ] )
 
-	def __init__( self, time = float( 0 ), string = 0, fret = 0, techniques = _TECHNIQUES, isChord = False ):
+	def __init__( self, time = float( 0 ), string = 0, fret = 0, isChord = False ):
 		self.isChord	= isChord
 		self.time		= time
 		self.string		= string
 		self.fret		= fret
-		self.techniques	= techniques
+		self.techniques	= Note._TECHNIQUES
+		self.bends		= []
 
 	def __str__( self ):
 		output = ""
+		indent = "\t"
 		if self.isChord is True:
-			output = "\t<chordNote "
+			indent += "\t"
+			output = indent + "<chordNote "
 		else:
-			output = "<note "
+			output = indent + "<note "
 		output += "time=\"" + str( self.time ) + "\" string=\"" + str( self.string ) + "\" fret=\"" + str( self.fret ) + "\" "
-		for i in self.techniques:
-			type, value = i
+		for type, value in self.techniques.items():
 			output += type + "=\"" + str( value ) + "\" "
-		output += "/>"
+		if len( self.bends ) == 0:
+			output += "/>"
+		else:
+			output += ">\n"
+			output += indent + "\t<bendValues count=\"" + str( len( self.bends ) ) + "\">"
+			for i in self.bends:
+				output += indent + "\t" + str( i, tabs ) + "\n"
+			output += indent + "\t</bendValues>"
+			output += indent + "</note>"
 		return output
+
+	def SetTechnique( self, technique = "ignore", value = 0 ):
+		self.techniques[ technique ] = value
+
+class Chord( object ):
+	_TECHNIQUES = OrderedDict( [ ( "linkNext", 0 ), ( "accent", 0 ), ( "fretHandMute", 0 ), 
+				( "highDensity", 0 ), ( "ignore", 0 ), ( "palmMute", 0 ), ( "hopo", 0 ), ( "strum", "down" ) ] )
+
+	def __init__( self, time = float( 0 ) ):
+		self.time		= time
+		self.techniques	= Chord._TECHNIQUES
+		self.notes		= []
+
+	def __str__( self ):
+		indent = "\t"
+		output = indent + "<chord " + "time=\"" + str( self.time ) + "\" "
+		for type, value in self.techniques.items():
+			output += type + "=\"" + str( value ) + "\" "
+		if len( self.notes ) is 0:
+			output += "/>"
+		else:
+			output += ">\n"
+			for i in self.notes:
+				output += str( i ) + "\n"
+			output += indent + "</chord>"
+		return output
+
+	def SetTechnique( self, technique = "ignore", value = 0 ):
+		self.techniques[ technique ] = value
+
+class Anchor( object ):
+	def __init__( self, time = float( 0 ), fret = 0, width = float( 0 ) ):
+		self.time	= time
+		self.fret	= fret
+		self.width	= width
+
+	def __str__( self ):
+		indent = "\t"
+		return indent + "<anchor time=\"" + str( self.time ) + "\" fret=\"" + str( self.fret ) + "\" width=\"" + str( self.width ) + "\" />"
+
+class HandShape( object ):
+	def __init__( self, startTime = float( 0 ), endTime = float( 0 ), chordID = 0 ):
+		self.startTime	= startTime
+		self.endTime	= endTime
+		self.chordID	= chordID
+
+	def __str__( self ):
+		indent = "\t"
+		return indent + "<handShape startTime=\"" + str( self.startTime ) + "\" endTime=\"" + str( self.endTime ) + "\" chordID=\"" + str( self.fret ) + "\" />"
 	
 class Track( object ):
+	_ARR_PROPERTIES = OrderedDict( [ ( "represent", 0 ), ( "bonusArr", 0 ), ( "standardTuning", 1 ), ( "nonStandardChords", 0 ), ( "barreChords", 0 ), ( "powerChord", 0 ),
+		( "dropDPower", 0 ), ( "openChords", 0 ), ( "fingerPicking", 0 ), ( "pickDirection", 0 ), ( "doubleStops", 0 ), ( "palmMutes", 0 ), ( "harmonics", 0 ) ] )
+	# pinchHarmonics="0" hopo="0" tremolo="0" slides="0" unpitchedSlides="0" bends="0" tapping="0" vibrato="0" fretHandMutes="0" slapPop="0" 
+	# twoFingerPicking="0" fifthsAndOctaves="0" syncopation="0" bassPick="0" sustain="0" pathLead="0" pathRhythm="1" pathBass="0" />
+
+
 	def __init__( self ):
-		# head
-		self.title					= str
-		self.waveFilePath			= str #
-		# self.arrType				= str
-		self.part					= 1
-		self.offset					= float( 0 )
-		self.centOffset				= float( 0 )
-		self.songLength				= float( 0 )
-		self.internalName			= str #
-		self.startBeat				= 0			
-		self.averageTempo			= 120 #
-		self.tuning					= Tuning._ESTANDARD	
-		self.capo					= 0					
-		self.artistName				= str
-		self.artistNameSort			= str #
-		self.albumName				= str
-		self.albumNameSort			= str #
-		self.albumYear				= int #
-		self.albumArt				= str #
-		self.crowdSpeed				= 1
-		self.arrangementProperties	= []
-		self.lastConversionTime		= str
+		# Meta
+		self.meta = OrderedDict( [
+			( "version"					, "" ),
+			( "title"					, "" ),
+			( "arrangement"				, "" ),
+			( "waveFilePath"			, "" ), #
+			( "part"					, 1 ),
+			( "offset"					, float( 0 ) ),
+			( "centOffset"				, float( 0 ) ),
+			( "songLength"				, float( 0 ) ),
+			( "internalName"			, "" ), #
+			( "songNameSort"			, "" ), #
+			( "startBeat"				, 0	),
+			( "averageTempo"			, 120 ), #
+			( "tuning"					, Tuning._ESTANDARD	),
+			( "capo"					, 0 ),
+			( "artistName"				, "" ),
+			( "artistNameSort"			, "" ), #
+			( "albumName"				, "" ),
+			( "albumNameSort"			, "" ), #
+			( "albumYear"				, 0 ), #
+			( "albumArt"				, "" ), #
+			( "crowdSpeed"				, 1 ),
+			( "arrangementProperties"	, Track._ARR_PROPERTIES ),
+			( "lastConversionTime"		, "" ),
+			] )
 		
 		# Structure
-		self.phrases			= []
-		self.phraseIterations	= []
-		self.newLinkedDiffs		= []
-		self.linkedDiffs		= []
-		self.phraseProperties	= []
-		self.chordTemplates		= []
-		self.fretHandTemplates	= []
-		self.ebeats				= []
-		self.sections			= []
-		self.events				= []
-		self.transcriptionTrack	= [ [], [], [], [] ]
-		self.levels				= []
+		self.structure = OrderedDict( [ 
+			( "phrases"					, [ Phrase() ] ),
+			( "phraseIterations"		, [] ),
+			( "newLinkedDiffs"			, [] ),
+			( "linkedDiffs"				, [] ),
+			( "phraseProperties"		, [] ),
+			( "chordTemplates"			, [] ),
+			( "fretHandTemplates"		, [] ),
+			( "ebeats"					, [] ),
+			( "sections"				, [] ),
+			( "events"					, [] ),
+			] )
+
+		# Content
+		self.transcriptionTrack	= Level( True )
+		self.levels				= [ Level( False ) ]
