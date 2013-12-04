@@ -6,13 +6,24 @@ class Default:
 	# Default numbers
 	_DIVISION			= 480
 	_TEMPO				= 120.0
+	_TIMESIGNUM			= 4
+	_TIMESIGDENOM		= 2
+	_TIMESIGCLOCKS		= 24
+	_TIMESIGQUARTER		= 8
+	_TIMESIG			= [ 4, 2, 24, 8 ]
+
 	_ONEMINUTE			= 60.0
 	_ONEMINUTEMILLI		= 60000
 	_ONEMINUTEMICRO		= 60000000
 	_ONESECONDMILLI		= 1000
 
+	_PITCHBENDRANGE		= 16384 # pow( 2, 14 )
+
 	# Hardcoded MIDI format values.
-	_FILETYPEBYTE		= 9
+	_FORMATBYTE			= 9
+	_TRACKSBYTE			= 11
+	_DIVISIONBYTES		= range( 12, 14 )
+	_CHUNKIDLENGTH		= 4
 	_HEADERLENGTH		= 14
 	_TRACKHEADERLENGTH	= 8
 	_MAXDELTASIZE		= 4
@@ -50,51 +61,55 @@ class Event( object ):
 		_KEY_SIGNATURE		= 0x59
 		_SEQUENCER_SPECIFIC	= 0x7F
 
-	def __init__( self, time = float, status = int ):
+	def __init__( self, time = None, status = 0 ):
 		self.time			= time
 		self.status			= status
 
 class ChannelEvent( Event ):
-	def __init__( self, time = float, status = int, primary = int, secondary = 0 ):
+	def __init__( self, time = None, status = 0, primary = 0, secondary = 0 ):
 		Event.__init__( self, time, status )
 
-		self.channel = status & 0xF0
+		self.channel = status & 0x0F
 		self.primary = primary
 		self.secondary = secondary
 
 class PitchBend( Event ):
-	def __init__(self, time = float, status = int, bend = int):
+	def __init__( self, time = None, status = 0, bend = int( Default._PITCHBENDRANGE / 2 ) ):
 		Event.__init__( self, time, status )
 
-		self.channel = status & 0xF0
+		self.channel = status & 0x0F
 		self.bend = bend
 
 class MetaEvent( Event ):
-	def __init__( self, time = float, metaType = int, message = str ):
+	def __init__( self, time = None, metaType = 0, message = "" ):
 		Event.__init__( self, time, Event.eType._META )
 
 		self.type = metaType
 		self.message = message
 
 class Tempo( Event ):
-	def __init__( self, time = float, tempo = Default._TEMPO ):
+	def __init__( self, time = None, tempo = Default._TEMPO ):
 		Event.__init__( self, time, Event.eType._META )
 
 		self.tempo = tempo
 
-	def __str__(self):
-		return "Time: " + self.time + "\tType: " + self.tempo + "\tContent: " + self.tempo
-
 class TimeSig( Event ):
-	def __init__(self, time, numerator = 4, denominator = 4, clocks = 24, quarter = 8 ):
+	def __init__(self, time = None, numerator = 4, denominator = 2, clocks = 24, quarter = 8 ):
 		Event.__init__( self, time, Event.eType._META )
 
 		self.numerator		= numerator
 		self.denominator	= denominator
 		self.clocks			= clocks
 		self.quarter		= quarter
+
+class KeySig( Event ):
+	def __init__(self, time = None, sharpsOrFlats = 0, isMinor = 0 ):
+		Event.__init__( self, time, Event.eType._META )
+
+		self.intonation = sharpsOrFlats
+		self.isMinor	= isMinor
 	
-class TrackGlobal:
+class Global( object ):
 	def __init__( self ):
 		self.smpteOffset	= 0.0
 		self.metaEvent		= []
@@ -102,15 +117,14 @@ class TrackGlobal:
 		self.timeSig		= []
 		self.keySig			= []
 
-class Track:
-	globalTrack = TrackGlobal()
-
+class Track( object ):
 	def __init__( self, nameTrack = "", nameInstrument = "" ):
 		if nameTrack is None:		nameTrack = ""
 		if nameInstrument is None:	nameInstrument = ""
 
 		self.nameTrack				= nameTrack
 		self.nameInstrument			= nameInstrument
+		self.sequenceNumber			= 0
 
 		self.noteOn					= []
 		self.noteOff				= []
@@ -124,16 +138,17 @@ class Track:
 		self.systemRealTime			= []
 		self.metaEvent				= []
 
-class TrackSimple:
-	def __init__( self ):
-		self.noteOn					= []
-		self.noteOff				= []
-		self.aftertouch				= []
-		self.controller				= []
-		self.programChange			= []
-		self.channelPressure		= []
-		self.pitchBend				= []
-		self.sysex					= []
-		self.systemCommon			= []
-		self.systemRealTime			= []
-		self.metaEvent				= []
+class File( object ):
+	def __init__( self, format = 0, division = 480 ):
+		self.name			= ""
+		self.format			= format
+		self.division		= division
+		self.length			= 0.0
+		self.globalTrack	= Global()
+		self.tracks			= []
+
+class BinaryFile( object ):
+	def __init__( self, format = 0, division = 480 ):
+		self.format			= format
+		self.division		= division
+		self.tracks			= []

@@ -1,12 +1,21 @@
 from collections import OrderedDict
 
 class Tuning( object ):
+	_DEFAULT = { 
+		 "E Standard": [ 0, 0, 0, 0, 0, 0 ], 
+		 "Drop D": [ -2, 0, 0, 0, 0, 0 ], 
+		 "Eb Standard": [ -1, -1, -1, -1, -1, -1 ], 
+		 "Eb Standard Drop Db": [ -3, -1, -1, -1, -1, -1 ], 
+		 "D Standard": [ -2, -2, -2, -2, -2, -2 ],
+		 "Drop C": [ -4, -2, -2, -2, -2, -2 ]
+		 }
+
 	_ESTANDARD	= [ [ 0, 0, 0, 0, 0, 0 ], "EStandard", "E Standard" ]
 	_DROPD		= [ [ -2, 0, 0, 0, 0, 0 ], "DropD", "Drop D" ]
-	_DSTANDARD	= [ [ -2, -2, -2, -2, -2, -2 ], "DStandard", "Drop D" ]
+	_DSTANDARD	= [ [ -2, -2, -2, -2, -2, -2 ], "DStandard", "D Standard" ]
 	_DROPC		= [ [ -4, -2, -2, -2, -2, -2 ], "DropC", "Drop C" ]
 
-	def __init__( self, tuning = _ESTANDARD ):
+	def __init__( self, tuning = _DEFAULT[ "E Standard" ] ):
 		self.tuning = tuning
 
 	def __str__( self ):
@@ -30,13 +39,13 @@ class Phrase( object ):
 		return phrase
 
 class PhraseIteration( object ):
-	def __init__( self, time = float, phraseID = int, variation = int ):
+	def __init__( self, time = float, phraseID = 0, variation = 0 ):
 		self.time		= time
 		self.phraseID	= phraseID
 		self.variation	= variation
 
 	def __str__( self ):
-		return "<phraseIteration time=\"" + str( self.time ) + "\" phraseId=\"" + str( self.phraseID ) + "\" variation=\"" + str( variation ) + "\" />"
+		return "<phraseIteration time=\"" + str( self.time ) + "\" phraseId=\"" + str( self.phraseID ) + "\" variation=\"" + str( self.variation ) + "\" />"
 
 # class NewLinkedDiff( object ):
 
@@ -73,7 +82,7 @@ class Ebeat( object ):
 		return "<ebeat time=\"" + str( self.time ) + "\" measure=\"" + str( self.measure ) + "\" />"
 
 class Section( object ):
-	def __init__( self, name = str, number = 0, startTime = float( 0 ) ):
+	def __init__( self, name = str, number = 0, startTime = 0.0 ):
 		self.name		= name
 		self.number		= number
 		self.startTime	= startTime
@@ -82,9 +91,9 @@ class Section( object ):
 		return "<section name=\"" + self.name + "\" number=\"" + str( self.number ) + "\" startTime=\"" + str( self.startTime ) + "\" />"
 
 class Event( object ):
-	def __init__( self, time = float( 0 ), code = str ):
+	def __init__( self, time = float( 0 ), code = "" ):
 		self.time = time
-		self.code = measure
+		self.code = str( code )
 
 	def __str__( self ):
 		return "<ebeat time=\"" + str( self.time ) + "\" code=\"" + self.code + "\" />"
@@ -148,9 +157,12 @@ class Level( object ):
 		return output
 
 class BendValue( object ):
-	def __init__( self, time = float( 0 ), step = float( 0 ) ):
+	def __init__( self, time = None, step = 0.0, string = 0 ):
 		self.time	= time
 		self.step	= step
+
+		# Helper
+		self.string	= string
 
 	def __str__( self ):
 		indent = "\t"
@@ -169,6 +181,9 @@ class Note( object ):
 		self.fret		= fret
 		self.techniques	= Note._TECHNIQUES
 		self.bends		= []
+
+		# Helper
+		self.difficulty = 0
 
 	def __str__( self ):
 		output = ""
@@ -222,7 +237,7 @@ class Chord( object ):
 		self.techniques[ technique ] = value
 
 class Anchor( object ):
-	def __init__( self, time = float( 0 ), fret = 0, width = float( 0 ) ):
+	def __init__( self, time = 0.0, fret = 0, width = 4.0 ):
 		self.time	= time
 		self.fret	= fret
 		self.width	= width
@@ -246,8 +261,7 @@ class Track( object ):
 		( "dropDPower", 0 ), ( "openChords", 0 ), ( "fingerPicking", 0 ), ( "pickDirection", 0 ), ( "doubleStops", 0 ), ( "palmMutes", 0 ), ( "harmonics", 0 ) ] )
 	# pinchHarmonics="0" hopo="0" tremolo="0" slides="0" unpitchedSlides="0" bends="0" tapping="0" vibrato="0" fretHandMutes="0" slapPop="0" 
 	# twoFingerPicking="0" fifthsAndOctaves="0" syncopation="0" bassPick="0" sustain="0" pathLead="0" pathRhythm="1" pathBass="0" />
-
-
+	
 	def __init__( self ):
 		# Meta
 		self.meta = OrderedDict( [
@@ -263,7 +277,7 @@ class Track( object ):
 			( "songNameSort"			, "" ), #
 			( "startBeat"				, 0	),
 			( "averageTempo"			, 120 ), #
-			( "tuning"					, Tuning._ESTANDARD	),
+			( "tuning"					, Tuning._DEFAULT[ "E Standard" ]	),
 			( "capo"					, 0 ),
 			( "artistName"				, "" ),
 			( "artistNameSort"			, "" ), #
@@ -293,3 +307,12 @@ class Track( object ):
 		# Content
 		self.transcriptionTrack	= Level( True )
 		self.levels				= [ Level( False ) ]
+
+		# Helper
+		self.quantize			= 1
+		self.difficulties		= []
+		self.bends				= []
+
+class Helper( object ):
+	def __init__( self ):
+		pass

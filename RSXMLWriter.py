@@ -1,5 +1,4 @@
 from RSXMLObjects import *
-from types import SimpleNamespace
 
 def ProcessMeta( track = Track() ):
 	meta = ""
@@ -61,11 +60,16 @@ def Write( track = Track() ):
 	except Exception as e:	
 		print( "Error: " + str( e ) )
 
-i = OrderedDict([ ( "first", 1 ), ( "second", 2 ), ( "third", 3 )])
-print( str( i ) )
-print( str( i["second"] ) )
+def RSXMLWriter( tracks = [] ):
+	for track in tracks:
+		Write( track )
 
-t = Track()
-print( ProcessMeta( t ) )
-print( ProcessStructure( t ) )
-print( ProcessContent( t ) )
+def test():
+	i = OrderedDict([ ( "first", 1 ), ( "second", 2 ), ( "third", 3 )])
+	print( str( i ) )
+	print( str( i["second"] ) )
+
+	t = Track()
+	print( ProcessMeta( t ) )
+	print( ProcessStructure( t ) )
+	print( ProcessContent( t ) )

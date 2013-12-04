@@ -1,11 +1,12 @@
 from sys import argv
 from MIDIReader import MIDIReader
+from RSXMLArranger import RSXMLArranger
+from RSXMLWriter import RSXMLWriter
 
 def main():
 	script, fileName = argv
 
-	tracks = MIDIReader( fileName )
-
-	print( str( len( tracks ) ) )
+	midiFile = MIDIReader( fileName )
+	RSXMLArranger( midiFile )
 
 main()
