@@ -1,3 +1,4 @@
+from decimal import Decimal
 from MIDIObjects import *
 
 '''
@@ -21,14 +22,14 @@ Potential issues:
 
 '''
 
-def ConvertBytesToFloat( bytes = bytearray() ):
+def ConvertBytesToDecimal( bytes = bytearray() ):
 	if bytes is None:
-		return 0.0
+		return None
 
 	buffer = 0.0
 	for index, value in enumerate( bytes ):
 		buffer += value * pow( 256, ( len( bytes ) - 1 - index ) )
-	return buffer;
+	return Decimal( buffer).quantize( Decimal( '0.001' ) );
 
 def ConvertBytesToVLQOld( bytes = bytearray() ):
 	if bytes is None:
@@ -54,7 +55,7 @@ def ConvertBytesToVLQ( bytes = bytearray() ):
 
 def ConvertDeltaToTime( delta = 0, division = Default._DIVISION, tempo = Default._TEMPO):
 	length = delta / division
-	return ( Default._ONEMINUTE / tempo ) * length
+	return Decimal( ( Default._ONEMINUTE / Decimal( tempo ) ) * Decimal( length ) ).quantize( Decimal( '0.001' ) )
 
 def ConvertParametersToPitchBend( param1 = int, param2 = int ):
 	# http://www.blitter.com/~russtopia/MIDI/~jglatt/tech/midispec/wheel.htm
@@ -71,11 +72,11 @@ def ConvertParametersToPitchBend( param1 = int, param2 = int ):
 	return bend
 
 def ConvertSMPTEToTime( bytes = bytearray(3), division = Default._DIVISION ):
-	time = 0.0;
+	time = 0.0 ;
 	time = time + bytes[1]
 	time = time + ( bytes[2] / division )
 	time = time + ( ( bytes[3] / 100 ) / division )
-	return time
+	return Decimal( time ).quantize( Decimal( '0.001' ) )
 
 def GetMIDI( filePath = None ):
 	if filePath is None:	
@@ -139,7 +140,7 @@ def ProcessDelta( memblock, index ):
 
 def ProcessDebug( memblock, readPosition, division = Default._DIVISION, file = File() ):	
 	globalTrack = file.globalTrack
-	currentTime = 0.0
+	currentTime = Decimal( 0.0 )
 	currentTempo = Default._TEMPO
 	globalTempo = iter( globalTrack.tempo )
 	try:
@@ -238,14 +239,14 @@ def ProcessFormat1( memblock, file = File() ):
 	if len( globalTrack.tempo ) > 0:
 		isGlobalPass = False
 
-	currentTime = 0.0
-	currentTempo = Default._TEMPO
+	currentTime = Decimal( 0.0 )
+	currentTempo = Decimal( Default._TEMPO )
 
 	globalTempo = iter( globalTrack.tempo )
 	try:
 		nextTempo = next( globalTempo )
 	except StopIteration as e:
-		nextTempo = Tempo( 0, -1 )
+		nextTempo = None
 
 	lastEvent = 0x00
 	
@@ -254,7 +255,7 @@ def ProcessFormat1( memblock, file = File() ):
 		delta = 0
 		try:
 			delta, index = ProcessDelta( memblock, index )
-			if nextTempo.tempo != -1 and currentTime >= nextTempo.time:
+			if nextTempo != None and currentTime >= nextTempo.time:
 				currentTempo = nextTempo.tempo
 				try:
 					nextTempo = next( globalTempo )
@@ -320,8 +321,8 @@ def ProcessFormat1( memblock, file = File() ):
 			elif metaType == Event.eMeta._NAME_SEQUENCE:		track.nameTrack = str( contents, "ascii" )
 			elif metaType == Event.eMeta._NAME_INSTRUMENT:		track.nameInstrument = str( contents, "ascii" )
 			elif metaType == Event.eMeta._LYRIC:				track.metaEvent.append( MetaEvent( currentTime, metaType, str( contents, "ascii" ) ) )				
-			elif metaType == Event.eMeta._MARKER:				globalTrack.metaEvent.append( MetaEvent( currentTime, Event.eMeta._MARKER, str( contents, "ascii" ) ) )
-			elif metaType == Event.eMeta._CUE:					globalTrack.metaEvent.append( MetaEvent( currentTime, Event.eMeta._CUE, str( contents, "ascii" ) ) )
+			elif metaType == Event.eMeta._MARKER:				globalTrack.metaEvent.append( MetaEvent( currentTime, metaType, str( contents, "ascii" ) ) )
+			elif metaType == Event.eMeta._CUE:					globalTrack.metaEvent.append( MetaEvent( currentTime, metaType, str( contents, "ascii" ) ) )
 			elif metaType == Event.eMeta._NAME_PROGRAM:			track.metaEvent.append( MetaEvent( currentTime, metaType, str( contents, "ascii" ) ) )
 			elif metaType == Event.eMeta._NAME_DEVICE:			track.metaEvent.append( MetaEvent( currentTime, metaType, str( contents, "ascii" ) ) )
 			elif metaType == Event.eMeta._CHANNEL_PREFIX:		track.metaEvent.append( MetaEvent( currentTime, metaType, str( contents, "ascii" ) ) )
@@ -329,7 +330,7 @@ def ProcessFormat1( memblock, file = File() ):
 			elif metaType == Event.eMeta._END_OF_TRACK: 
 				isFinished = True
 			elif metaType == Event.eMeta._TEMPO: 
-				currentTempo = ( Default._ONEMINUTEMICRO / ConvertBytesToFloat( contents ) )
+				currentTempo = Decimal( Default._ONEMINUTEMICRO / ConvertBytesToDecimal( contents ) ).quantize( Decimal( '0.001' ) )
 				globalTrack.tempo.append( Tempo( currentTime, currentTempo ) )
 			elif metaType == Event.eMeta._SMPTE_OFFSET: 
 				offset = ConvertSMPTEToTime( contents, division )
@@ -350,7 +351,9 @@ def ProcessFormat1( memblock, file = File() ):
 		index += 1
 		lastEvent = status
 
-	if currentTime > file.length:
+	if file.length is None:
+		file.length = currentTime
+	elif currentTime > file.length:
 		file.length = currentTime
 
 	if isGlobalPass is False:
@@ -375,7 +378,5 @@ def Process( filePath = None, numArrs = None ):
 	return file
 
 def MIDIReader( fileName = str ):
-	try:					
-		return Process( fileName )
-	except Exception as e:	
-		print( "Error: " + str( e ) )
+	#getcontext().prec = 6
+	return Process( fileName )

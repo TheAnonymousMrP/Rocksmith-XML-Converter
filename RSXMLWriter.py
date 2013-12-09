@@ -32,44 +32,170 @@ def ProcessStructure( track = Track() ):
 
 def ProcessContent( track = Track() ):
 	content = ""
-	content += str( track.transcriptionTrack ) + "\n"
+	content += WriteLevel( track.transcriptionTrack, 1 ) + "\n"
 	content += "\t<levels count=\"" + str( len( track.levels ) ) + "\""
 	if len( track.levels ) == 0:
 		content += " />\n"
 	else:
 		content += ">\n"
-		for x in track.levels:
-			content += str( x ) + "\n"
+		for level in track.levels:
+			content += WriteLevel( level, 2 ) + "\n"
 		content += "\t</levels>\n"
 	return content
 
-def Write( track = Track() ):
-	try:	
-		filePath = track.title + " - " + track.arrangementType + ".xml"	
-		with open( filePath, 'w+' ) as f:
-			meta = ProcessMeta( track )
-			structure = ProcessStructure( track )
-			content = ProcessStructure( track )
+def WriteBend( bend = BendValue(), tabs = 0 ):
+	if bend.time is None:
+			bend.time = -1.0
+	indent = ""
+	for i in range( 0, tabs ):
+		indent += "\t"
+	return indent + "<bendValue time=\"" + str( bend.time ) + "\" step=\"" + str( bend.step ) + "\" />"
 
-			f.write( "<?xml version='1.0' encoding='UTF-8'?>" )
-			f.write( "<song version=\"" + str( track.version ) + "\">" )
-			f.write( meta )
-			f.write( structure )
-			f.write( content )
-			f.write( "</song>" )
-	except Exception as e:	
-		print( "Error: " + str( e ) )
+def WriteNote( note = Note(), tabs = 0 ):
+	if note.time is None:
+		note.time = -1.0
+	if note.sustain is None:
+		note.sustain = 0.0
+
+	indent = ""
+	for i in range( 0, tabs ):
+		indent += "\t"
+
+	output = ""
+	if note.isChord is True:
+		output = indent + "<chordNote "
+	else:
+		output = indent + "<note "
+	output += "time=\"" + str( note.time ) + "\" string=\"" + str( note.string ) + "\" fret=\"" + str( note.fret )
+	output += "\" sustain=\"" + str ( note.sustain ) + "\" "
+	for type, value in note.techniques.items():
+		output += type + "=\"" + str( value ) + "\" "
+	if len( note.bendValues ) == 0:
+		output += "/>"
+	else:
+		output += ">\n"
+		output += indent + "<bendValues count=\"" + str( len( note.bendValues ) ) + "\">"
+		for bend in note.bendValues:
+			output += WriteBend( bend, tabs + 1 ) + "\n"
+		output += indent + "</bendValues>"
+		output += indent + "</note>"
+	return output
+
+def WriteChord( chord = Chord(), tabs = 0 ):
+	#print( "Time: " + str( chord.time ) + " " + str( len( chord.notes ) ) )
+	if chord.time is None:
+		chord.time = -1.0
+
+	indent = ""
+	for i in range( 0, tabs ):
+		indent += "\t"
+
+	output = indent + "<chord " + "time=\"" + str( chord.time ) + "\" chordID=\"" + str( chord.chordID ) + "\" "
+	for type, value in chord.techniques.items():
+		output += type + "=\"" + str( value ) + "\" "
+	if len( chord.notes ) is 0:
+		output += "/>"
+	else:
+		output += ">\n"
+		for note in chord.notes:
+			output += WriteNote( note, tabs + 1 ) + "\n"
+		output += indent + "</chord>"
+	return output
+
+def WriteAnchor( anchor = Anchor(), tabs = 0 ):
+	if anchor.time is None:
+			anchor.time = -1.0
+
+	indent = ""
+	for i in range( 0, tabs ):
+		indent += "\t"
+
+	return indent + "<anchor time=\"" + str( anchor.time ) + "\" fret=\"" + str( anchor.fret ) + "\" width=\"" + str( anchor.width ) + "\" />"
+
+def WriteHandShape( handShape = HandShape(), tabs = 0 ):
+	if handShape.startTime is None:
+		handShape.startTime = -1.0
+	if handShape.endTime is None:
+		handShape.endTime = -1.0
+
+	indent = ""
+	for i in range( 0, tabs ):
+		indent += "\t"
+		
+	buffer = indent + "<handShape startTime=\"" + str( handShape.startTime )
+	buffer += "\" endTime=\"" + str( handShape.endTime ) + "\" chordID=\"" + str( handShape.fret ) + "\" />"
+	return buffer
+
+def WriteLevel( level = Level(), tabs = 0 ):
+	indent = ""
+	for i in range( 0, tabs + 1 ):
+		indent += "\t"
+
+	content = ""
+	# Notes
+	if len( level.notes ) == 0:
+		content += indent + "<notes count=\"0\" />\n"
+	else:
+		content += indent + "<notes count=\"" + str( len( level.notes ) ) + "\">\n"
+		for i in level.notes:
+			content += WriteNote( i, tabs + 2 ) + "\n"
+		content += indent + "</notes>\n"
+	# Chords
+	if len( level.chords ) == 0:
+		content += indent + "<chords count=\"0\" />\n"
+	else:
+		content += indent + "<chords count=\"" + str( len( level.chords ) ) + "\">\n"
+		for i in level.chords:
+			content += WriteChord( i, tabs + 2 ) + "\n"
+		content += indent + "</chords>\n"
+	# Anchors
+	if len( level.anchors ) == 0:
+		content += indent + "<anchors count=\"0\" />\n"
+	else:
+		content += indent + "<anchors count=\"" + str( len( level.anchors ) ) + "\">\n"
+		for i in level.anchors:
+			content += WriteAnchor( i, tabs + 2 ) + "\n"
+		content += indent + "</anchors>\n"
+	# HandShapes
+	if len( level.handShapes ) == 0:
+		content += indent + "<handShapes count=\"0\" />\n"
+	else:
+		content += indent + "<handShapes count=\"" + str( len( level.handShapes ) ) + "\">\n"
+		for i in level.handShapes:
+			content += WriteHandShape( i, tabs + 2 ) + "\n"
+		content += indent + "\t</handShapes>\n"
+
+	indent = ""
+	for i in range( 0, tabs ):
+		indent += "\t"
+
+	output = ""
+	if level.isTranscription == False:
+		output = indent + "<level difficulty=\"" + str( level.difficulty ) + "\">\n"
+		output += content
+		output += indent + "</level>"
+	else:
+		output = indent + "<transcriptionTrack difficulty=\"-1\">\n"
+		output += content
+		output += indent + "</transcriptionTrack>"
+	return output
+
+def Write( track = Track() ):
+	trackName = track.meta[ "title" ]
+	arrangementName = track.meta[ "arrangement" ]
+	filePath = trackName + " - " + arrangementName + ".xml"	
+	with open( filePath, 'w' ) as f:
+		meta = ProcessMeta( track )
+		structure = ProcessStructure( track )
+		content = ProcessContent( track )
+
+		f.write( "<?xml version='1.0' encoding='UTF-8'?>\n" )
+		f.write( "<song version=\"" + str( track.meta[ "version" ] ) + "\">\n" )
+		f.write( meta )
+		f.write( structure )
+		f.write( content )
+		f.write( "</song>" )
 
 def RSXMLWriter( tracks = [] ):
 	for track in tracks:
 		Write( track )
-
-def test():
-	i = OrderedDict([ ( "first", 1 ), ( "second", 2 ), ( "third", 3 )])
-	print( str( i ) )
-	print( str( i["second"] ) )
-
-	t = Track()
-	print( ProcessMeta( t ) )
-	print( ProcessStructure( t ) )
-	print( ProcessContent( t ) )

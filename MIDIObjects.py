@@ -1,3 +1,5 @@
+from decimal import *
+
 def enum(**enums):
 	# http://stackoverflow.com/a/1695250 
     return type('Enum', (), enums)
@@ -5,14 +7,14 @@ def enum(**enums):
 class Default:
 	# Default numbers
 	_DIVISION			= 480
-	_TEMPO				= 120.0
+	_TEMPO				= 120
 	_TIMESIGNUM			= 4
 	_TIMESIGDENOM		= 2
 	_TIMESIGCLOCKS		= 24
 	_TIMESIGQUARTER		= 8
 	_TIMESIG			= [ 4, 2, 24, 8 ]
 
-	_ONEMINUTE			= 60.0
+	_ONEMINUTE			= 60
 	_ONEMINUTEMILLI		= 60000
 	_ONEMINUTEMICRO		= 60000000
 	_ONESECONDMILLI		= 1000
@@ -111,7 +113,7 @@ class KeySig( Event ):
 	
 class Global( object ):
 	def __init__( self ):
-		self.smpteOffset	= 0.0
+		self.smpteOffset	= None
 		self.metaEvent		= []
 		self.tempo			= []
 		self.timeSig		= []
@@ -143,7 +145,7 @@ class File( object ):
 		self.name			= ""
 		self.format			= format
 		self.division		= division
-		self.length			= 0.0
+		self.length			= None
 		self.globalTrack	= Global()
 		self.tracks			= []
 
