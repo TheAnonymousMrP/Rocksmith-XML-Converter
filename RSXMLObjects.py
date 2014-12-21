@@ -349,7 +349,7 @@ class Track( object ):
 			( "albumArt"				, "" ), #
 			( "crowdSpeed"				, 1 ),
 			( "arrangementProperties"	, Track._ARR_PROPERTIES ),
-			( "lastConversionTime"		, "" ),
+			( "lastConversionDateTime"	, "" ),
 			] )
 		
 		# Structure
