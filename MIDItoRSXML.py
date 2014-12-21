@@ -8,7 +8,7 @@ def main():
 
 	arrFlags = RSXMLArrangerFlags()
 	arrFlags.hasChanneledBends = False
-	arrFlags.hasManualAnchors = True
+	arrFlags.hasManualAnchors = False
 	arrFlags.quantise = 2
 
 	midiFile = MIDIReader( fileName )

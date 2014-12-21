@@ -2,21 +2,23 @@ from collections import OrderedDict
 
 class Tuning( object ):
 	_DEFAULT = { 
-		 "E Standard": [ 0, 0, 0, 0, 0, 0 ], 
-		 "Drop D": [ -2, 0, 0, 0, 0, 0 ], 
-		 "Eb Standard": [ -1, -1, -1, -1, -1, -1 ], 
-		 "Eb Standard Drop Db": [ -3, -1, -1, -1, -1, -1 ], 
-		 "D Standard": [ -2, -2, -2, -2, -2, -2 ],
-		 "Drop C": [ -4, -2, -2, -2, -2, -2 ]
+		 "E Standard": ( 0, 0, 0, 0, 0, 0 ), 
+		 "Drop D": ( -2, 0, 0, 0, 0, 0 ), 
+		 "Eb Standard": ( -1, -1, -1, -1, -1, -1 ), 
+		 "Eb Standard Drop Db": ( -3, -1, -1, -1, -1, -1 ), 
+		 "D Standard": ( -2, -2, -2, -2, -2, -2 ),
+		 "Drop C": ( -4, -2, -2, -2, -2, -2 )
 		 }
 
-	_ESTANDARD	= [ [ 0, 0, 0, 0, 0, 0 ], "EStandard", "E Standard" ]
-	_DROPD		= [ [ -2, 0, 0, 0, 0, 0 ], "DropD", "Drop D" ]
-	_DSTANDARD	= [ [ -2, -2, -2, -2, -2, -2 ], "DStandard", "D Standard" ]
-	_DROPC		= [ [ -4, -2, -2, -2, -2, -2 ], "DropC", "Drop C" ]
+	_ESTANDARD	= ( ( 0, 0, 0, 0, 0, 0 ), "EStandard", "E Standard" )
+	_DROPD		= ( ( -2, 0, 0, 0, 0, 0 ), "DropD", "Drop D" )
+	_DSTANDARD	= ( ( -2, -2, -2, -2, -2, -2 ), "DStandard", "D Standard" )
+	_DROPC		= ( ( -4, -2, -2, -2, -2, -2 ), "DropC", "Drop C" )
 
 	def __init__( self, tuning = _DEFAULT[ "E Standard" ] ):
 		self.tuning = tuning
+		self.displayName = None
+		self.name = None
 
 	def __str__( self ):
 		tuning = "<tuning "
@@ -57,9 +59,9 @@ class PhraseIteration( object ):
 # class PhraseProperties( object ):
 
 class ChordTemplate( object ):
-	_DEFAULT = [ -1, -1, -1, -1, -1, -1 ]
+	_DEFAULT = ( -1, -1, -1, -1, -1, -1 )
 
-	def __init__( self, chordName = None, displayName = None, fingers = _DEFAULT.copy(), frets = _DEFAULT.copy() ):
+	def __init__( self, chordName = None, displayName = None, fingers = _DEFAULT, frets = _DEFAULT ):
 		self.chordName		= chordName
 		self.displayName	= displayName
 		self.fingers		= fingers
@@ -82,9 +84,15 @@ class ChordTemplate( object ):
 		line += "/>"
 		return line
 
-	def ConvertFretsToFingers( frets = [] ):
-		# Not yet operational
-		return ChordTemplate._DEFAULT.copy()
+	def ConvertFretsToFingers( frets = None ):
+		'''Not yet functional.'''
+		if frets is None:
+			return None
+		fingers = list( ChordTemplate._DEFAULT )
+		for i in fingers:
+			# Transform frets[ i ].
+			pass
+		return tuple( fingers )
 
 # class FretHandMuteTemplate( object ):
 
@@ -123,12 +131,13 @@ class Event( object ):
 		return "<ebeat time=\"" + str( self.time ) + "\" code=\"" + self.code + "\" />"
 
 class BendValue( object ):
-	def __init__( self, time = None, step = 0.0, string = 0 ):
+	def __init__( self, time = None, step = 0.0, channel = 0 ):
 		self.time	= time
 		self.step	= step
 
 		# Helper
-		self.string	= string
+		self.channel	= channel
+		self.difficulty = None
 
 	def __str__( self ):
 		if self.time is None:
@@ -137,7 +146,7 @@ class BendValue( object ):
 
 class Note( object ):
 	_TECHNIQUES = OrderedDict( [ ( "linkNext", 0 ), ( "hopo", 0 ), ( "hammerOn", 0 ), ( "pullOff", 0 ), 
-			( "harmonic", 0 ), ( "harmonicPinch", 0 ), ( "ignore", 0 ), ( "leftHand", 1 ), ( "rightHand", 0 ), 
+			( "harmonic", 0 ), ( "harmonicPinch", 0 ), ( "ignore", 0 ), ( "leftHand", -1 ), ( "rightHand", -1 ), 
 			( "mute", 0 ), ( "palmMute", 0 ), ( "pickDirection", 0 ), ( "pluck", -1 ), ( "slap", -1 ), 
 			( "slideTo", -1 ), ( "slideUnpitchTo", -1 ), ( "tap", 0 ), ( "tremolo", 0 ), ( "vibrato", 0 ) ] )
 
@@ -146,10 +155,10 @@ class Note( object ):
 		self.time		= time
 		self.string		= string
 		self.fret		= fret
-		self.bend		= 0.0
-		self.bendValues	= []
+		self.bend		= 0
+		self.bendValues	= None
 		self.sustain	= 0
-		self.techniques	= Note._TECHNIQUES
+		self.techniques	= Note._TECHNIQUES.copy()
 		
 		# Helper
 		self.minDifficulty	= 0
@@ -157,8 +166,9 @@ class Note( object ):
 	def __str__( self ):
 		if self.time is None:
 			self.time = -1.0
-		if self.sustain is None:
-			self.sustain = 0.0
+		if self.bendValues is None:
+			self.bendValues = ()
+
 		output = ""
 		indent = "\t"
 		if self.isChord is True:
@@ -169,6 +179,7 @@ class Note( object ):
 		output += "\" sustain=\"" + str ( self.sustain ) + "\" "
 		for type, value in self.techniques.items():
 			output += type + "=\"" + str( value ) + "\" "
+		output += "bend=\"" + str( self.bend ) + "\" "
 		if len( self.bendValues ) == 0:
 			output += "/>"
 		else:
@@ -179,6 +190,9 @@ class Note( object ):
 			output += "</bendValues>"
 			output += "</note>"
 		return output
+
+	def hasTuple( self ):
+		return not isinstance( self.bendValues, tuple )
 
 	def SetTechnique( self, technique = "ignore", value = 0 ):
 		self.techniques[ technique ] = value
@@ -202,10 +216,11 @@ class Chord( object ):
 		self.time		= time
 		self.chordID	= None
 		self.techniques	= Chord._TECHNIQUES
-		self.notes		= []
+		self.notes		= ()
 
 		# Helper
 		self.minDifficulty	= 0
+		self.isRepeat		= False
 
 	def __str__( self ):
 		if self.time is None:
@@ -213,7 +228,7 @@ class Chord( object ):
 		output = "<chord " + "time=\"" + str( self.time ) + "\" "
 		for type, value in self.techniques.items():
 			output += type + "=\"" + str( value ) + "\" "
-		if len( self.notes ) is 0:
+		if self.isRepeat or len( self.notes ) is 0:
 			output += "/>"
 		else:
 			output += ">\n"
@@ -222,18 +237,25 @@ class Chord( object ):
 			output += "</chord>"
 		return output
 
+	def hasTuples( self ):
+		return isinstance( self.notes, tuple )
+
 	def GetFrets( self ):
-		frets = ChordTemplate._DEFAULT.copy()
+		frets = list( ChordTemplate._DEFAULT )
 		for note in self.notes:
 			frets[ note.string ] = note.fret
 
-		return frets
+		return tuple( frets )
 
-	def SetTechnique( self, technique = "ignore", value = 0 ):
-		self.techniques[ technique ] = value
+	def GetDuration( self ):
+		maxDuration = 0
+		for note in self.notes:
+			if note.sustain > maxDuration:
+				maxDuration = note.sustain
+		return maxDuration
 
 class Anchor( object ):
-	def __init__( self, time = None, fret = 0, width = 4.0 ):
+	def __init__( self, time = None, fret = 0, width = None ):
 		self.time	= time
 		self.fret	= fret
 		self.width	= width
@@ -241,21 +263,24 @@ class Anchor( object ):
 	def __str__( self ):
 		if self.time is None:
 			self.time = -1.0
+		if self.width is None:
+			self.width = 4.0
+
 		return "<anchor time=\"" + str( self.time ) + "\" fret=\"" + str( self.fret ) + "\" width=\"" + str( self.width ) + "\" />"
 
 class HandShape( object ):
-	def __init__( self, startTime = None, endTime = None, chordID = 0 ):
-		self.startTime	= startTime
+	def __init__( self, time = None, endTime = None, chordID = 0 ):
+		self.time		= time
 		self.endTime	= endTime
 		self.chordID	= chordID
 
 	def __str__( self ):
-		if self.startTime is None:
-			self.startTime = -1.0
+		if self.time is None:
+			self.time = -1.0
 		if self.endTime is None:
 			self.endTime = -1.0
 		
-		buffer = "<handShape startTime=\"" + str( self.startTime ) + "\" endTime=\"" + str( self.endTime ) + "\" chordID=\"" + str( self.fret ) + "\" />"
+		buffer = "<handShape startTime=\"" + str( self.time ) + "\" endTime=\"" + str( self.endTime ) + "\" chordID=\"" + str( self.fret ) + "\" />"
 		return buffer
 
 class Level( object ):
@@ -267,6 +292,8 @@ class Level( object ):
 		self.anchors			= []
 		self.handShapes			= []
 
+		self.phraseChange		= []
+
 	def __str__( self ):
 		''' Describes contents of Level. For full output, see RSXMLWriter.WriteLevel() '''
 		content = "Level Difficulty: " + self.difficulty + " Contents: "
@@ -275,6 +302,9 @@ class Level( object ):
 		content += "\n\t Anchors: " + str( len( self.anchors ) )
 		content += "\n\t HandShapes: " + str( len( self.handShapes ) )
 		return content
+
+	def hasTuples( self ):
+		return ( isinstance( self.notes, tuple ) and isinstance( self.chords, tuple ) and isinstance( self.anchors, tuple ) and isinstance( self.handShapes, tuple ) )
 	
 class Track( object ):
 	class Helper( object ):
@@ -283,8 +313,10 @@ class Track( object ):
 			for i in range( 0, 16 ):
 				self.bends.append( [] )
 			self.bendsOmni			= []
+			self.arpeggios			= {}
 			self.chordNames			= {}
 			self.difficulties		= []
+			self.key				= None
 			self.quantise			= 2
 
 	_ARR_PROPERTIES = OrderedDict( [ ( "represent", 0 ), ( "bonusArr", 0 ), ( "standardTuning", 1 ), ( "nonStandardChords", 0 ), ( "barreChords", 0 ), ( "powerChord", 0 ),
@@ -336,6 +368,6 @@ class Track( object ):
 
 		# Content
 		self.transcriptionTrack	= Level( True )
-		self.levels				= [ Level( False ) ]
+		self.levels				= []
 
 		self.helper				= Track.Helper()

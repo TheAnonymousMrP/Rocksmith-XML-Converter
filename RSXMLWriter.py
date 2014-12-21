@@ -54,8 +54,8 @@ def WriteBend( bend = BendValue(), tabs = 0 ):
 def WriteNote( note = Note(), tabs = 0 ):
 	if note.time is None:
 		note.time = -1.0
-	if note.sustain is None:
-		note.sustain = 0.0
+	if note.bendValues is None:
+		note.bendValues = ()
 
 	indent = ""
 	for i in range( 0, tabs ):
@@ -70,6 +70,7 @@ def WriteNote( note = Note(), tabs = 0 ):
 	output += "\" sustain=\"" + str ( note.sustain ) + "\" "
 	for type, value in note.techniques.items():
 		output += type + "=\"" + str( value ) + "\" "
+	output += "bend=\"" + str( note.bend ) + "\" "
 	if len( note.bendValues ) == 0:
 		output += "/>"
 	else:
@@ -93,7 +94,7 @@ def WriteChord( chord = Chord(), tabs = 0 ):
 	output = indent + "<chord " + "time=\"" + str( chord.time ) + "\" chordID=\"" + str( chord.chordID ) + "\" "
 	for type, value in chord.techniques.items():
 		output += type + "=\"" + str( value ) + "\" "
-	if len( chord.notes ) is 0:
+	if chord.isRepeat or len( chord.notes ) is 0:
 		output += "/>"
 	else:
 		output += ">\n"
@@ -105,6 +106,8 @@ def WriteChord( chord = Chord(), tabs = 0 ):
 def WriteAnchor( anchor = Anchor(), tabs = 0 ):
 	if anchor.time is None:
 			anchor.time = -1.0
+	if anchor.width is None:
+			anchor.width = 4.0
 
 	indent = ""
 	for i in range( 0, tabs ):
@@ -113,8 +116,8 @@ def WriteAnchor( anchor = Anchor(), tabs = 0 ):
 	return indent + "<anchor time=\"" + str( anchor.time ) + "\" fret=\"" + str( anchor.fret ) + "\" width=\"" + str( anchor.width ) + "\" />"
 
 def WriteHandShape( handShape = HandShape(), tabs = 0 ):
-	if handShape.startTime is None:
-		handShape.startTime = -1.0
+	if handShape.time is None:
+		handShape.time = -1.0
 	if handShape.endTime is None:
 		handShape.endTime = -1.0
 
@@ -122,8 +125,8 @@ def WriteHandShape( handShape = HandShape(), tabs = 0 ):
 	for i in range( 0, tabs ):
 		indent += "\t"
 		
-	buffer = indent + "<handShape startTime=\"" + str( handShape.startTime )
-	buffer += "\" endTime=\"" + str( handShape.endTime ) + "\" chordID=\"" + str( handShape.fret ) + "\" />"
+	buffer = indent + "<handShape startTime=\"" + str( handShape.time )
+	buffer += "\" endTime=\"" + str( handShape.endTime ) + "\" chordID=\"" + str( handShape.chordID ) + "\" />"
 	return buffer
 
 def WriteLevel( level = Level(), tabs = 0 ):

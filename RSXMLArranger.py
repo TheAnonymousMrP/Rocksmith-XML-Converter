@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy, deepcopy
 from decimal import Decimal
 from fractions import Fraction
 from itertools import zip_longest
@@ -41,35 +41,39 @@ def ConvertPitchBendToFloat( bend = 8192, semiTones = Compatibility._PITCHBENDLO
 	bend = float( bend / 2 )								# Converts back to semitones, now as a neat float in 0.5 increments.
 	return bend
 
-def YieldBends( note = RSXML.Note(), bends = RSXML.Track().helper.bends, isChanneled = True ):
-	# Horribly inefficient.
-	bendValues = []
-	if note.time is None:
-		note.time = -1.0
-	start = note.time
-	end = start + note.techniques[ "sustain" ]
+def YieldOmniBends( note = RSXML.Note(), bends = RSXML.Track().helper.bendsOmni ):
+	# Seems inefficient. Learn to use actual generators.
+	start = None
+	end = start
+	if note.time is not None:
+		start = note.time
+		if note.sustain is not None:
+			end = start + note.sustain
 
-	bendsIter = None
-	if isChanneled is True:
-		bendsIter = iter( bends[ note.string ] )
-	else:
-		bendsIter = iter( bends )
+	if start is None:
+		return None
+
+	bendsIter = iter( bends )
 
 	try:
 		bend = next( bendsIter )
 	except StopIteration as e:
 		return None
 
-	while bend.time != None and bend.time < end:
+	bendValues = []
+	while bend is not None and bend.time is not None and bend.time < end:
 		if bend.time >= start:
 			bendValues.append( bend )
 
 		try:
 			bend = next( bendsIter )
 		except StopIteration as e:
-			bend = RSXML.BendValue()
+			bend = None
 
-	return bendValues
+	if len( bendValues ) == 0:
+		return None
+	else:
+		return tuple( bendValues )
 
 def ArrangeEbeats( file = MIDI.File() ):
 	ebeats = []
@@ -136,7 +140,7 @@ def ArrangeSections( file = MIDI.File() ):
 	return sections
 
 def ProcessMetaEvents( midi = MIDI.Track(), rsxml = RSXML.Track() ):
-	# This function covers the various Text meta-events stored per-Track.
+	'''	This function covers the various Text meta-events stored per-Track. Most of this will likely be deprecated in the future. '''
 
 	# Phrase preparation
 	phrases = []
@@ -144,7 +148,9 @@ def ProcessMetaEvents( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 	phraseIDs = {}
 	phraseVariations = {}
 
-	# Chord preparation
+	# ChordTemplate preparation
+	arpeggios = {}
+	arpStart = None
 	chordNames = {}
 
 	for event in midi.metaEvent:
@@ -154,16 +160,22 @@ def ProcessMetaEvents( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 		# Anchors - There should be a better way to do this. No support for variable width at present.
 		if textType == 'A':
 			rsxml.transcriptionTrack.anchors.append( RSXML.Anchor( event.time, message ) )
-
-		# Bends - Provided for compatibility purposes. Will likely deprecate as soon as pitch bend events are working and tested.
-		elif textType == 'B':
-			pass
+		# Getting replaced with arpeggios.
+			
 
 		# Chord Names - Not sure what alternative there is, here.
 		elif textType == 'C':
-			# Redundancy is acceptable at this time, as we cannot yet substantiate potential fret/finger differences between chord inversions.
-			chordNames[ event.time ] = str( message )
-
+			if message == "ArpStart":
+				arpStart = event.time
+			elif message == "ArpEnd":
+				if arpStart is not None:
+					arpeggios[ arpStart ] = event.time
+				else:
+					assert "Potential problem with Arpeggio-flagging Text event at %f: No identified start event." % event.time
+			else:
+				# Redundancy is acceptable at this time, as we cannot yet substantiate potential fret/finger differences between chord inversions.
+				chordNames[ event.time ] = str( message )
+	
 		elif textType == 'E':
 			rsxml.structure[ "events" ].append( RSXML.Event( event.time, message ) )
 
@@ -195,6 +207,7 @@ def ProcessMetaEvents( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 
 	rsxml.structure[ "phrases" ] = phrases
 	rsxml.structure[ "phraseIterations" ] = phraseIterations
+	rsxml.helper.arpeggios = arpeggios
 	rsxml.helper.chordNames = chordNames
 
 def CompileBends( midi = MIDI.Track(), rsxml = RSXML.Track() ):
@@ -225,7 +238,7 @@ def CompileBends( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 		last = bend	
 		
 def CompileNotes( midi = MIDI.Track(), rsxml = RSXML.Track() ):
-	''' Converts MIDI notes to RSXML notes.
+	'''	Converts MIDI notes to RSXML notes.
 
 	The mismatch-correction logic needs to be comprehensively tested. 
 	A mismatch between note-on and -off events will be resolved as follows:
@@ -261,7 +274,7 @@ def CompileNotes( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 
 		if on.channel == off.channel:
 			duration = off.time - on.time
-			note.techniques[ "sustain" ] = duration
+			note.sustain = duration
 			if ( fret < 0 or fret > Default._MAXFRETS ) or ( string < 0 or string >= strings ):
 				failNotes.append( note )
 			else:
@@ -311,15 +324,26 @@ def BendNotes( rsxml = RSXML.Track() ):
 		start = note.time
 		end = note.time + note.sustain
 
-		if start >= 0:
+		if start is not None:
+			bendValues = []
 			while currentBend[ note.string ] != None and currentBend[ note.string ].time <= end:
 				if currentBend[ note.string ].time >= start:
-					note.bendValues.append( currentBend[ note.string ] )
+					bendValues.append( currentBend[ note.string ] )
 
 				try:
 					currentBend[ note.string ] = next( bendIter[ note.string ] )
 				except StopIteration as e:
 					currentBend[ note.string ] = None
+
+			note.bend = 0.0
+			for i in bendValues:
+				if i.step > note.bend: 
+					note.bend = i.step
+
+			if note.bend < 1.0:
+				note.bend = 1.0
+
+			note.bendValues = tuple( bendValues )
 
 def ApplyTechniques( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 	events = iter( midi.controller )
@@ -328,17 +352,12 @@ def ApplyTechniques( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 	except StopIteration as e:
 		event = MIDI.Event()
 
-	flags = RSXML.Note._TECHNIQUES
+	flags = RSXML.Note._TECHNIQUES.copy()
 	for note in rsxml.transcriptionTrack.notes:
-		if event.time != None and note.time > event.time:
-			try:
-				event = next( events )
-			except StopIteration as e:
-				event = MIDI.Event()
-
-			if event.primary == Default._TECHNIQUECONTROLLER[ "bend" ] and len( note.bendValues ) == 0:
+		while event.time is not None and note.time >= event.time:
+			if event.primary == Default._TECHNIQUECONTROLLER[ "bend" ] and note.bendValues is not None:
 				# A flag for bends when Pitch Wheel doesn't want to play with channels.
-				note.bendValues = YieldBends( note, rsxml.helper.bendsOmni, False )
+				note.bendValues = YieldOmniBends( note, rsxml.helper.bendsOmni )
 				
 				maxBend = 0.0
 				for i in bends:
@@ -392,8 +411,10 @@ def ApplyTechniques( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 			elif event.primary == Default._TECHNIQUECONTROLLER[ "tap" ]:
 				if event.secondary >= 64:
 					flags[ "tap" ] = 1
+					flags[ "rightHand" ] = 1
 				else:
 					flags[ "tap" ] = 0
+					flags[ "righthand" ] = -1
 			elif event.primary == Default._TECHNIQUECONTROLLER[ "tremolo" ]:
 				if event.secondary >= 64:
 					flags[ "tremolo" ] = 1
@@ -406,15 +427,26 @@ def ApplyTechniques( midi = MIDI.Track(), rsxml = RSXML.Track() ):
 					flags[ "vibrato" ] = 0
 			# Bass
 			elif event.primary == Default._TECHNIQUECONTROLLER[ "pluck" ]:
-				pass
+				if event.secondary >= 64:
+					flags[ "pluck" ] = 1
+				else:
+					flags[ "pluck" ] = 0
 			elif event.primary == Default._TECHNIQUECONTROLLER[ "slap" ]:
-				pass	
+				if event.secondary >= 64:
+					flags[ "slap" ] = 1
+				else:
+					flags[ "slap" ] = 0	
+
+			try:
+				event = next( events )
+			except StopIteration as e:
+				event = MIDI.Event()
 
 		# Apply to note.		
 		note.techniques = flags.copy()
 
 def QuantiseNotes( rsxml = RSXML.Track() ):
-	''' If a note's duration is less than a specified quantisation amount, the value is reset to 0. '''
+	'''	If a note's duration is less than a specified quantisation amount, the value is reset to 0. '''
 	thisBeat = None
 	nextBeat = None
 
@@ -439,30 +471,31 @@ def QuantiseNotes( rsxml = RSXML.Track() ):
 				note.sustain = 0
 
 def CompileChords( rsxml = RSXML.Track() ):
-	''' Process Note list to identify notes within a chord, separating the two as the RSXML format requires.. '''
+	'''	Process Note list to identify notes within a chord, separating the two as the RSXML format requires.. '''
 	notes = []
 	chords = []
 
 	buffer = []
-	buffer.append( rsxml.transcriptionTrack.notes[ 0 ] )
-	bufferTime = rsxml.transcriptionTrack.notes[ 0 ].time
-	for note in rsxml.transcriptionTrack.notes[ 1: ]:
+	bufferTime = 0
+	for note in rsxml.transcriptionTrack.notes:
 		if note.time > bufferTime:
 			if len( buffer ) > 1:
+				# Assemble chord, and attempt to derive chord ID (creating template if necessary).
 				chord = RSXML.Chord( bufferTime )
-				chord.notes = buffer.copy()
+				chord.notes = tuple( buffer )
+				chord.chordID = CompileChordID( chord.GetFrets(), chord.time, rsxml, False, True )
+				fingers = rsxml.structure[ "chordTemplates" ][ chord.chordID ].fingers
+				for index, note in enumerate( chord.notes ):
+					note.techniques[ "leftHand" ] = fingers[ index ]
 
-				for n in chord.notes:
-					if n.minDifficulty > chord.minDifficulty:
-						chord.minDifficulty = n.minDifficulty
+					if note.minDifficulty > chord.minDifficulty:
+						chord.minDifficulty = note.minDifficulty
 
 				chords.append( chord )
-
+			elif len( buffer ) == 0:
+				pass
 			else:
-				try:
-					notes.append( buffer[ 0 ] )
-				except IndexError as e:
-					print( "Unexpected error during chord arrangement. Approx time: " + str( note.time ) )
+				notes.append( buffer[ 0 ] )
 
 			buffer.clear()
 
@@ -470,74 +503,261 @@ def CompileChords( rsxml = RSXML.Track() ):
 		bufferTime = note.time
 
 	rsxml.transcriptionTrack.notes = notes
-	rsxml.transcriptionTrack.chords = chords
+	rsxml.transcriptionTrack.chords = chords		
 
-	# Chord IDs, or an attempt at such.
-	for chord in chords:
-		CompileChordID( chord, rsxml, True )
-
-def CompileChordID( chord = RSXML.Chord(), rsxml = RSXML.Track(), isFirstSort = False ):
-	frets = chord.GetFrets()
-
+def CompileChordID( frets = RSXML.ChordTemplate._DEFAULT, time = None, rsxml = RSXML.Track(), isArpeggio = False, isFirstSort = False ):
+	'''	Derives a chordID (and if necessary, creates a template) from a set of frets.''' 
 	for template in rsxml.structure[ "chordTemplates" ]:
 		if frets == template.frets:
-			chord.chordID = template.id
-			break
+			return template.id
 			
 	else:
 		chordName = None
 		if isFirstSort:
-			if chord.time in rsxml.helper.chordNames.keys():
+			if time in rsxml.helper.chordNames.keys():
 				# Chord names are only needed first time only, so we can safely pop it from the helper dict.
-				# Ironically, they could have been useful, but I've already commited to it here, so fuck me.
+				# Ironically, they could have been useful later on, but I've already commited to it here, so fuck me.
 				try:
-					chordName = rsxml.helper.chordNames.pop( chord.time )
+					chordName = rsxml.helper.chordNames.pop( time )
 				except KeyError as e:
-					print( "Unexpected pop disaster at " + str( chord.time ) )
+					print( "Unexpected pop disaster at " + str( time ) )
 		else:
-			if len( chord.notes ) > 2:
+			if sum( i >= 0 for i in frets ) > 2:
 				# No need to name a 'double stop'.
 				pass
 
-		displayName = None # Use some kind of look-up table, if this works how I think it does.
+		displayName = chordName # Use some kind of look-up table, if this works how I think it does.
+
+		if isArpeggio:
+			if displayName is None:
+				displayName = "arp"
+			else:
+				displayName = chordName + "-arp"
 
 		fingers = RSXML.ChordTemplate.ConvertFretsToFingers( frets )
 
-		template = RSXML.ChordTemplate( chordName, displayName, fingers.copy(), frets.copy() )
+		template = RSXML.ChordTemplate( chordName, displayName, fingers, frets )
 		template.id = len( rsxml.structure[ "chordTemplates" ] )
 
 		rsxml.structure[ "chordTemplates" ].append( template )
 
-		chord.chordID = template.id
+		return template.id
 
 def CompileAnchors( rsxml = RSXML.Track() ):
-	''' Algorithm to automatically generate anchors. Not yet implemented. '''
+	'''	Algorithm to automatically generate anchors. Not yet implemented.
+	For now, assumes a width of 4 frets. May provide an exception for chords. '''
 	# Clear any manually-added flags. This shouldn't be neccessary, really.
 	rsxml.transcriptionTrack.anchors.clear()
 
-	lastNote = None
-	thisNote = None
+	note = None
+	chord = None
+
+	noteIter = iter( rsxml.transcriptionTrack.notes )
+	try:
+		note = next( noteIter )
+	except StopIteration:
+		note = None
+
+	chordIter = iter( rsxml.transcriptionTrack.chords )
+	try:
+		chord = next( chordIter )
+	except StopIteration:
+		chord = None
+
+	anchor = None
+	time = None
+	low = -1
+	high = 0
+	isTapped = False
+	isChordNext = False
+	tapped = []
+	while note is not None or chord is not None:
+		if note is None:
+			isChordNext = True			
+		else:
+			if note.time > chord.time:
+				isChordNext = True
+			elif note.time == chord.time:
+				assert "Overlapping note and chord times at %f." % note.time
+
+		if isChordNext:
+			isTapped = False
+			frets = sorted( chord.GetFrets() )
+			i = 0
+			while i < len( frets ):
+				if frets[ i ] == -1:
+					frets.pop( i )
+				elif frets[ i ] == 0 and frets[ -1 ] > 5:
+					frets.pop( i )
+				else:
+					break
+
+			time = chord.time
+			low = frets[ 0 ]
+			high = frets[ -1 ]
+
+			try:
+				chord = next( chordIter )
+			except StopIteration:
+				chord = None
+
+			isChordNext = False
+
+		else:
+			time = note.time
+			if note.techniques[ "tap" ] == 1:
+				isTapped = True
+			elif note.techniques[ "hopo" ] == 0:
+				isTapped = False
+
+			low = note.fret
+			high = note.fret
+			if isTapped:
+				tapped.append( note )
+
+			try:
+				note = next( noteIter )
+			except StopIteration:
+				note = None
+
+
+
+		# Compare to last anchor.
+		if anchor is None:
+			width = high - low
+			anchor = RSXML.Anchor( time, low, width )
+
+			#print( "Time: " + str( time ) ) # Debug
+			#print( "Anchor: " + str( anchor.time ) + " " + str( anchor.fret ) + " " + str( anchor.width ) ) # Debug
+			#print( "\tThis note/chord: " + str( low ) + " " + str( high ) + " " + str( width ) ) # Debug
+
+		elif isTapped:
+			pass
+					
+		else:
+			if len( tapped ) > 1:
+				pass
+
+			#print( "Time: " + str( time ) ) # Debug
+			#print( "\tAnchor: " + str( anchor.time ) + " " + str( anchor.fret ) )
+			#print( "\tThis note/chord: " + str( low ) + " " + str( high ) + " " + str( width ) )
+
+			if low < anchor.fret or high > anchor.fret + anchor.width:
+				if low < anchor.fret and high > anchor.fret + anchor.width:
+					width = high - low
+				elif low < anchor.fret:
+					width = anchor.fret + anchor.width - low
+				elif high > anchor.fret + anchor.width:
+					width = high - anchor.fret
+				
+				if width > 4:
+					#if width > 7 and low >= 15:
+					#	anchor.fret = low
+					#	anchor.width = width
+					#elif width > 5 and low >= 10:
+					#	anchor.fret = low
+					#	anchor.width = width
+					#else:
+						# New anchor
+						if anchor.width < 4: 
+							anchor.width = 4
+						rsxml.transcriptionTrack.anchors.append( anchor )
+						#print( "\t\tAnchor appended: " + str( anchor.time ) + " " + str( anchor.fret ) + " " + str( anchor.width ) )
+						anchor = RSXML.Anchor( time, low, 0 )
+				elif width > anchor.width:
+					anchor.width = width	
+
+				if low != 0:
+					anchor.fret = low		
+
+			time = None
+			low = -1
+			high = 0
 
 def CompileHandShapes( rsxml = RSXML.Track() ):
-	pass
+	'''	Algorithm to automatically generate handshapes. Somewhat implemented. '''
+	noteIter = iter( rsxml.transcriptionTrack.notes )
+	try:
+		note = next( noteIter )
+	except StopIteration:
+		note = RSXML.Note( -1.0 )
+	chordIter = iter( rsxml.transcriptionTrack.chords )
+	try:
+		chord = next( chordIter )
+	except StopIteration:
+		chord = RSXML.Chord( -1.0 )
+
+	for start, end in rsxml.helper.arpeggios:
+		frets = list( ChordTemplate._DEFAULT )
+
+		while 0 <= note.time < start:
+			try:
+				note = next( noteIter )
+			except StopIteration:
+				note = Note( -1.0 )
+		while 0 <= chord.time < start:
+			'''	As each chord is meant to have a corresponding HandShape, we process that at the same time as arpeggios. To reduce redundancy, 
+			if a chord is within the timeframe of an arpeggio, a corresponding HandShape is not produced. This should preserve chronology. '''
+			rsxml.transcriptionTrack.handShapes.append( RSXML.HandShape( chord.time, chord.time + chord.GetDuration(), chord.chordID ) )
+			try:
+				chord = next( chordIter )
+			except StopIteration:
+				chord = Chord( -1.0 )
+
+		''' The logic of this section could here splinter into providing the capacity to produce multiple arpeggios within a timeframe. '''
+		while 0 <= note.time < end or 0 <= chord.time < end:
+			if 0 <= note.time < chord.time:
+				if frets[ note.string ] == -1:
+					frets[ note.string ] = note.fret
+				try:
+					note = next( noteIter )
+				except StopIteration:
+					note = Note( -1.0 )
+			elif 0 <= chord.time <= note.time:
+				for index, fret in enumerate( chord.GetFrets() ):
+					if frets[ index ] == -1:
+						frets[ index ] = fret
+				try:
+					chord = next( chordIter )
+				except StopIteration:
+					chord = Chord( -1.0 )
+
+			if sum( i == -1 for i in frets ) == 0: # If all 6 frets are accounted for, ceases searching for new notes.
+				break
+		else:
+			assert "No notes or chords found within timeframe: %f, %f." % start, end
+	
+		rsxml.transcriptionTrack.handShapes.append( RSXML.HandShape( start, end, CompileChordID( frets, start, rsxml, True, True ) ) )
+	else:
+		firstChord = None
+		endTime = None
+		for chord in rsxml.transcriptionTrack.chords:
+			if firstChord is not None:
+				if chord.chordID == firstChord.chordID:
+					chord.isRepeat = True
+					endTime = chord.time + chord.GetDuration()
+				else:
+					rsxml.transcriptionTrack.handShapes.append( RSXML.HandShape( firstChord.time, endTime, chord.chordID ) )
+					firstChord = chord
+					endTime = chord.time + chord.GetDuration()
+			else:
+				firstChord = chord
+				endTime = chord.time + chord.GetDuration()			
 
 def ArrangeLevels( rsxml = RSXML.Track() ):
-	''' Arranges difficulty levels.
-
+	'''	Arranges difficulty levels.
 	The segregation of notes and chords as discrete concepts and lists presents a challenge to reducing redundant sorting.
 	'''
+	if rsxml.transcriptionTrack.hasTuples():
+		assert "Immutability of level arrays is not guaranteed."
+
 	rsxml.helper.difficulties.sort( reverse = True )
 
-	# Experiment in redundancy-reduction.
-	notes = deepcopy( rsxml.transcriptionTrack.notes )
-	chords = deepcopy( rsxml.transcriptionTrack.chords )
-	#notes = list( rsxml.transcriptionTrack.notes )
-	#chords = list( rsxml.transcriptionTrack.chords )
-	anchors = rsxml.transcriptionTrack.anchors.copy()
-	handShapes = rsxml.transcriptionTrack.handShapes.copy()
-	
-	print( "Original: " + str( len( rsxml.transcriptionTrack.chords[ 0 ].notes ) ) )
-	print( "Copy: " + str( len( chords[ 0 ].notes ) ) )
+	notes = list( rsxml.transcriptionTrack.notes )
+	#chords = deepcopy( rsxml.transcriptionTrack.chords )
+	chords = list( rsxml.transcriptionTrack.chords )
+	anchors = list( rsxml.transcriptionTrack.anchors )
+	handShapes = list( rsxml.transcriptionTrack.handShapes )
 
 	for index, velocity in enumerate( rsxml.helper.difficulties ):
 		i = 0
@@ -545,41 +765,56 @@ def ArrangeLevels( rsxml = RSXML.Track() ):
 			if velocity < notes[ i ].minDifficulty:
 				note = notes.pop( i )
 				# Need to handle removal of hopo flags in the event of cross-difficulty shenanigans.
+					
 			else:
 				i += 1
 
 		i = 0
 		while i < len( chords ):
 			if velocity < chords[ i ].minDifficulty:
-				chord = chords[ i ]
+				if chords[ i ].hasTuples():
+					assert "Modifiable chords may cause unreliable output."
+
+				chordNotes = list( chords[ i ].notes )
 				# Need to reinsert smaller chord or single note in the event of cross-difficulty shenanigans.
 				j = 0
-				while j < len( chord.notes ):
-					if velocity < chord.notes[ j ].minDifficulty:
-						note = chord.notes.pop( j )
+				while j < len( chordNotes ):
+					if velocity < chordNotes[ j ].minDifficulty:
+						note = chordNotes.pop( j )
 						# Need to handle removal of hopo flags in the event of cross-difficulty shenanigans.
 					else:
 						j += 1
 
-				if len( chord.notes ) > 1:
-					oldChordName = rsxml.structure[ "chordTemplates" ][ chord.chordID ].chordName # Part of cheesy hack.
+				if len( chordNotes ) > 1:
+					chords[ i ] = copy( chords[ i ] )
+					chords[ i ].notes = tuple( chordNotes )
 
-					chord.chordID = None
-					CompileChordID( chord, rsxml )
+					oldChordName = rsxml.structure[ "chordTemplates" ][ chords[ i ].chordID ].chordName # Part of cheesy hack.
+
+					chords[ i ].chordID = CompileChordID( chords[ i ].GetFrets(), chords[ i ].time, rsxml )
 
 					i += 1
 					
 					# Cheesy hack to derive chord name for now.
-					if len( chord.notes ) > 2:
-						rsxml.structure[ "chordTemplates" ][ chord.chordID ].chordName = oldChordName
+					if len( chordNotes ) > 2:
+						rsxml.structure[ "chordTemplates" ][ chords[ i ].chordID ].chordName = oldChordName
 
 				else:
-					if len( chord.notes ) == 1:
-						note = chord.notes[ 0 ]
+					if len( chordNotes ) == 1:
+						note = chordNotes[ 0 ]
 						note.isChord = False
 						notes.append( note )
 
 					chords.pop( i )
+
+			try:
+				if chords[ i ].chordID == chords[ i - 1 ].chordID:
+					chords[ i ].isRepeat = True
+				else:
+					chords[ i ].isRepeat = False
+			except IndexError:
+				if i == 0:
+					pass
 				
 			else:
 				i += 1
@@ -588,38 +823,93 @@ def ArrangeLevels( rsxml = RSXML.Track() ):
 
 		# level = RSXML.Level( False, rsxml.helper.difficulties[ index ] )
 		level = RSXML.Level( False, len( rsxml.helper.difficulties ) - 1 - index )
-		level.notes = deepcopy( notes )
-		level.chords = deepcopy( chords )
-		#level.notes = list( notes )
-		#level.chords = list( chords )
-		level.anchors = anchors.copy()
-		level.handShapes = handShapes.copy()
+		level.notes = tuple( notes )
+		#level.chords = deepcopy( chords )
+		level.chords = tuple( chords )
+		level.anchors = tuple( anchors )
+		level.handShapes = tuple( handShapes )
 
-		try:
-			print( "Difficulty: " + str( level.difficulty ) + " Time: " + str( chords [ 0 ].time ) + " Notes: " + str( len( chords[ 0 ].notes ) ) )
-			print( "Difficulty: " + str( level.difficulty ) + " Time: " + str( level.chords [ 0 ].time ) + " Notes: " + str( len( level.chords[ 0 ].notes ) ) )
-		except IndexError as e:
-			pass
+		print( "Difficulty " + str( level.difficulty ) + " - Finished." )
+		print( "\tNotes: " + str( len( level.notes ) ) + " | Chords: " + str( len( level.chords ) ) + " | Anchors: " + str( len( level.anchors ) ) )
 
 		rsxml.levels.append( level )
-	
-	try:
-		print( "Original: " + str( len( rsxml.transcriptionTrack.chords[ 0 ].notes ) ) )
-		print( "Copy: " + str( len( chords[ 0 ].notes ) ) )
-	except IndexError as e:
-			pass
 
 	# 'Undo' reversal.
 	rsxml.levels.reverse()
 
-	# Attempt to remove redundant phrases or sections across levels.
+def YieldPhraseEvents( events = None, phrases = None, index = None ):
+	if events is None or phrases is None or index is None:
+		raise StopIteration
+
+	try:
+		start = phrases[ index ].time
+		end = start
+		if index + 1 < len( phrases ):
+			end = phrases[ index + 1 ].time
+		
+		for event in events:
+			if start <= event.time < end:
+				yield event
+			elif event.time >= end:
+				break
+
+	except AttributeError or TypeError or IndexError:
+		raise StopIteration
+
+def OptimiseLevels( rsxml = RSXML.Track() ):
 	lastLevel = None
+	lastPhraseContents = None
+
 	for level in rsxml.levels:
-		pass
-		try:
-			print( "Difficulty: " + str( level.difficulty ) + " Time: " + str( level.chords [ 0 ].time ) + " Notes: " + str( len( level.chords[ 0 ].notes ) ) )
-		except IndexError as e:
-			pass
+		print( "Level " + str( level.difficulty ) )
+
+		phraseContents = []
+		for i in range( 0, len( rsxml.structure[ "phraseIterations" ] ) ):
+			phraseContents.append( [ [], [], False ] ) # Notes, Chords, hasChanged
+			for note in YieldPhraseEvents( level.notes, rsxml.structure[ "phraseIterations" ], i ):
+				if note is None:
+					break
+				phraseContents[ i ][ 0 ].append( note )
+
+			for chord in YieldPhraseEvents( level.chords, rsxml.structure[ "phraseIterations" ], i ):
+				if chord is None:
+					break
+				phraseContents[ i ][ 1 ].append( chord )
+
+			if lastPhraseContents is None:
+				phraseContents[ i ][ 2 ] = True
+
+			else:
+				difficulty = level.difficulty - 1
+				if difficulty == -1:
+					difficulty = len( rsxml.levels )
+				if phraseContents[ i ][ 0 ] != lastPhraseContents[ i ][ 0 ]:
+					phraseContents[ i ][ 2 ] = True
+					rsxml.structure[ "phrases" ][ rsxml.structure[ "phraseIterations" ][ i ].phraseID ].maxDifficulty = difficulty
+				if phraseContents[ i ][ 1 ] != lastPhraseContents[ i ][ 1 ]:
+					phraseContents[ i ][ 2 ] = True
+					rsxml.structure[ "phrases" ][ rsxml.structure[ "phraseIterations" ][ i ].phraseID ].maxDifficulty = difficulty
+
+			print( "\tPhrase " + str( i ) + " - Notes: " + str( len( phraseContents[ i ][ 0 ] ) ) + \
+				" Chords: " + str( len( phraseContents[ i ][ 1 ] ) ) + " Changed: " + str( phraseContents[ i ][ 2 ] ) )
+
+		level.notes = []
+		level.chords = []
+		for phrase in phraseContents:
+			if phrase[ 2 ]:
+				for note in phrase[ 0 ]:
+					level.notes.append( note )
+				for chord in phrase[ 1 ]:
+					level.chords.append( chord )
+
+		level.notes = tuple( level.notes )
+		level.chords = tuple( level.chords )
+
+		print( "Difficulty " + str( level.difficulty ) + " - Finished." )
+		print( "\tNotes: " + str( len( level.notes ) ) + " | Chords: " + str( len( level.chords ) ) + " | Anchors: " + str( len( level.anchors ) ) )
+
+		lastLevel = level
+		lastPhraseContents = phraseContents
 
 def RSXMLArranger( midi = MIDI.File(), flags = RSXMLArrangerFlags() ):
 	rsxml = RSXML.Track()
@@ -667,7 +957,14 @@ def RSXMLArranger( midi = MIDI.File(), flags = RSXMLArrangerFlags() ):
 			CompileAnchors( rsxmlTrack )
 		CompileHandShapes( rsxmlTrack )
 
+		# Prepare transcription track for writing, specifically by making its contents read-only.
+		rsxmlTrack.transcriptionTrack.notes = tuple( rsxmlTrack.transcriptionTrack.notes )
+		rsxmlTrack.transcriptionTrack.chords = tuple( rsxmlTrack.transcriptionTrack.chords )
+		rsxmlTrack.transcriptionTrack.anchors = tuple( rsxmlTrack.transcriptionTrack.anchors )
+		rsxmlTrack.transcriptionTrack.handShapes = tuple( rsxmlTrack.transcriptionTrack.handShapes )
+
 		ArrangeLevels( rsxmlTrack )
+		OptimiseLevels( rsxmlTrack )
 
 		tracks.append( rsxmlTrack )
 
